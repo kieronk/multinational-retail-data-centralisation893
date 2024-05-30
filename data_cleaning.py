@@ -154,7 +154,6 @@ class DataCleaning:
 
         # get an example from before the conversion so I can check if it works (I know the row indexed by 202 would need converting)
         original_join_date_example = cleaned_country_names_codes_null_duplicates_dob_jd_df.iloc[202]['join_date']
-        print('original join_date:\n', original_join_date_example)
 
         # Convert the join_date column to datetime, handling various formats
         cleaned_country_names_codes_null_duplicates_dob_jd_df['join_date'] = pd.to_datetime(cleaned_country_names_codes_null_duplicates_dob_jd_df['join_date'], errors='coerce', format='mixed') 
@@ -205,6 +204,8 @@ class DataCleaning:
         # return the cleaned df 
         return cleaned_country_names_codes_null_duplicates_dob_jd_text_df
 
+
+# code below is to test that it works 
 
 datacleaning_instance = DataCleaning() 
 

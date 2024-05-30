@@ -1,18 +1,20 @@
 import yaml
+import pandas as pd 
 from sqlalchemy import create_engine
+from sqlalchemy import insert
 from sqlalchemy.inspection import inspect
 
 class DatabaseConnector: 
     def _init__(self): 
         pass 
 
-    def read_db_creds(self): 
+    def read_db_creds(self): # read the db credentials 
         with open ('/Users/kk/Documents/ai_core/Data_engineering/multinational-retail-data-centralisation893/db_creds.yaml', 'r') as file: 
             db_creds = yaml.safe_load(file) #here safe load loads the content of the YAML file into a dictionary, and assigns it to a variable db_creds
         print('read_db_creds is working')
         return db_creds
     
-    def init_db_engine(self):
+    def init_db_engine(self): # this creates the engine (the key) to use with the db 
         creds = self.read_db_creds() #this gets the credentials by using the read_db_creds 
         db_url = f"postgresql://{creds['RDS_USER']}:{creds['RDS_PASSWORD']}@{creds['RDS_HOST']}:{creds['RDS_PORT']}/{creds['RDS_DATABASE']}" #this makes a URL to connect to the database using the credentials 
 
@@ -30,39 +32,32 @@ class DatabaseConnector:
         print(table_names)
         return table_names
 
-  
+
+    def upload_to_db(self, dataframe, table_name):
+        """
+        Uploads a Pandas DataFrame to the database as a new table.
+
+        :param dataframe: Pandas DataFrame to be uploaded.
+        :param table_name: Name of the table to be created in the database.
+        """
+        engine = self.init_db_engine() 
+
+        try:
+            dataframe.to_sql(name=table_name, con=engine, if_exists='replace', index=False)
+            print(f"Table '{table_name}' uploaded successfully.")
+        except Exception as e:
+            print(f"An error occurred while uploading the table: {e}")
+
+# test if code works   
 example = DatabaseConnector() 
 example.read_db_creds()
 example.list_db_tables()
 
+# next stage is to try and get the upload_to_db function working.
+# I'm using this example dataframe to test it 
 
-"""
-
-
-creds = example.read_db_creds()
-print(creds)
-
-  def test_init_db_engine(self):
-        my_test_instance = DatabaseConnector() 
-
-    # Call the init_db_engine method
-        engine = my_test_instance.init_db_engine()
-
-    # Check if engine is not None
-        assert engine is not None, "Engine object is None, initialization failed."
-
-    # Optionally, you can check if the engine is of the expected type
-    #assert isinstance(engine, create_engine), "Engine object is not of the expected type."
-
-# Run the test
+example_df = pd.DataFrame({'name' : ['User 1', 'User 2', 'User 3']})
 
 
- def list_db_tables(self):
-        # Get engine
-        engine = self.init_db_engine()
+example.upload_to_db(example_df, 'example_table')
 
-        # Get list of table names
-        table_names = engine.table_names()
-
-        return table_names
-        """
