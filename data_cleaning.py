@@ -7,191 +7,213 @@ from data_extraction import DataExtractor
 class DataCleaning: 
     def __init__ (self):
         pass 
-
-    #def clean_data(self):
        
-    def clean_country_values(self):
+    def clean_country_names(self): #this 
+        
+        #log starting of method
+        print('started clean_country_names method...')
+
         # Create an instance of DataExtractor
-        print('started clean_country_values method...')
         instance = DataExtractor()
 
         # Read data from the 'legacy_users' table
         df = instance.read_data_from_table('legacy_users')  
-        #print(df.head)       
-        
-        #print('this is the country values:')
-        #print(df['country'].unique(), '\n') 
+                
+        # create a list of the unique country values in the df 
+        list_of_country_names = df['country'].unique()
 
-        list_of_country_values = df['country'].unique()
-
-        #print('this is my list of country values:\n', list_of_country_values, '\n')
-
-        # List of elements to exclude
+        # create a list of values to exlude to exclude
         exclude_list = ['Germany', 'United Kingdom', 'United States', 'NULL']
 
         # Create a new list excluding the specified elements
-        list_of_values_to_drop = [item for item in list_of_country_values if item not in exclude_list]
-
-        #print('this is my list of values to drop:', list_of_values_to_drop, '\n')
+        list_of_names_to_drop = [item for item in list_of_country_names if item not in exclude_list]
 
         # Convert the list to a string that can be used in the query
-        query_str = 'country in @list_of_values_to_drop'
+        query_str = 'country in @list_of_names_to_drop'
 
-        # Get the indices of the rows that match any value in my_list
+        # Get the indices of the rows that match any value in my_list and store them in a list 
         list_of_indices = df.query(query_str).index.tolist()
 
-        #print('this is my list of indices', list_of_indices, '\n')
-
-        cleaned_country_values_df = df.drop(index=list_of_indices)
-
+        # create a new dataframe, which is copy of the dataframe with the unwanted rows dropped 
+        cleaned_country_names_df = df.drop(index=list_of_indices)
+        
+        #log whether the method has run correctly 
         print('unique values in original dataframe:')
         print(df['country'].unique(), '\n') 
-
         print('unique values in new dataframe:')
-        print(cleaned_country_values_df['country'].unique(), '\n')
-        #display(new_df.head(30)) 
+        print(cleaned_country_names_df['country'].unique(), '\n')  
+
+        #log that the method has run 
+        print('clean_country_names method has run... \n')
         
-        print('completed clean_country_values method about to return clean_country_values_df..')
-        return cleaned_country_values_df
+        #return the cleaned df 
+        return cleaned_country_names_df
 
 
-    def clean_country_codes(self): #this is correcting the GGB to GB
+    def clean_country_codes(self): #this is correcting the GGB in country codes to GB
         
-        #creating instance of datacleaning so that I can get the df from the clean_country_values function          
-        #datacleaning_instance = DataCleaning() 
-        #cleaned_country_values_df = datacleaning_instance.clean_country_values() 
-        
-        #running clean_country_values to get the df
+        # log that the clean_country_codes method has started 
         print('started clean_country_codes method...')
-        cleaned_country_values_df = self.clean_country_values() 
-        #print('run cleaned_country_values_df = self.clean_country_values()...')
-        #print('this is the country_codes values before cleaning:', cleaned_country_values_df['country_code'].unique(), '\n') 
+        
+        # running clean_country_names method to get the df
+        cleaned_country_names_df = self.clean_country_names() 
+        
+        # create a copy of the clean_country_names dataframe
+        cleaned_country_names_codes_df = cleaned_country_names_df.copy()
 
-        # Create a copy of the original dataframe
-        cleaned_country_values_and_codes_df = cleaned_country_values_df.copy()
+        # replace 'GGB' with 'GB' in the 'country_code' column of the cleaned_country_names_and_codes_df
+        cleaned_country_names_codes_df['country_code'] = cleaned_country_names_codes_df['country_code'].replace('GGB', 'GB')
 
-        # Replace 'GGB' with 'GB' in the 'country_code' column
-        cleaned_country_values_and_codes_df['country_code'] = cleaned_country_values_and_codes_df['country_code'].replace('GGB', 'GB')
+        # log the country_codes before and after cleaning to check that it's worked 
+        print('ths is cleaned_country_names_df:', cleaned_country_names_df['country_code'].unique(), '\n') 
+        print('ths is cleaned_country_names__and_codes_df:', cleaned_country_names_codes_df['country_code'].unique(), '\n') 
 
-        print('ths is cleaned_country_values_df:', cleaned_country_values_df['country_code'].unique(), '\n') 
+        #log that the method has run 
+        print('clean_country_codes method has run... \n')
 
-        print('ths is cleaned_country_values__and_codes_df:', cleaned_country_values_and_codes_df['country_code'].unique(), '\n') 
+        #return the cleaned df 
+        return cleaned_country_names_codes_df
 
-        return cleaned_country_values_and_codes_df
+
+    def drop_null_values_and_duplicates(self): # this drops the rows with NULL values and duplicate rows 
+
+        # log that the method has started 
+        print('started drop_null_values_and_duplicates method...')
+        
+        # create a copy of the cleaned df
+        cleaned_country_names_codes_null_duplicates_df = self.clean_country_codes() 
+
+        # create a list of all null roles  
+        list_of_null_rows = cleaned_country_names_codes_null_duplicates_df.query('country == "NULL" or country_code == "NULL"').index.tolist()
+
+        # log the number of null rows
+        print('length of null rows:', len(list_of_null_rows))
+        
+        # log the number of rows in the df before dropping rows 
+        print('before dropping rows:', len(cleaned_country_names_codes_null_duplicates_df))
+ 
+        # drop the rows with null values 
+        cleaned_country_names_codes_null_duplicates_df = cleaned_country_names_codes_null_duplicates_df.drop(index=list_of_null_rows)
+        
+        # log the number of rows in the df after dropping rows 
+        print('after dropping rows:', len(cleaned_country_names_codes_null_duplicates_df))
+
+        #dropping duplicates 
+        print('row count before drop duplicates', len(cleaned_country_names_codes_null_duplicates_df)) 
+        cleaned_country_names_codes_null_duplicates_df = cleaned_country_names_codes_null_duplicates_df.drop_duplicates()
+        print('row count after drop duplicates', len(cleaned_country_names_codes_null_duplicates_df)) 
+
+        #log that the method has run 
+        print('drop_null_values_and_duplicates method has run... \n')
+
+        # return the cleaned df 
+        return cleaned_country_names_codes_null_duplicates_df
+    
+    def clean_dob(self): #cleaning date_of_birth
+        
+        #log starting of method
+        print('started clean_dob method...')
+
+        # get the cleaned df
+        cleaned_country_names_codes_null_duplicates_dob_df = self.drop_null_values_and_duplicates()
+
+        # get an example from before the conversion so I can check if it works (I know the row indexed by 360 would need converting)
+        original_date_of_birth_example = cleaned_country_names_codes_null_duplicates_dob_df.iloc[360]['date_of_birth']
+        
+        # log before the conversion so that I can check it works 
+        print('original date_of_birth before pd.to_datetime():\n', original_date_of_birth_example)
+
+        # convert the 'date_of_birth' column to datetime, handling the different formats
+        cleaned_country_names_codes_null_duplicates_dob_df['date_of_birth'] = pd.to_datetime(cleaned_country_names_codes_null_duplicates_dob_df['date_of_birth'], errors='coerce', format='mixed')
+
+        # Check which dates could not be converted
+        invalid_dates = cleaned_country_names_codes_null_duplicates_dob_df[cleaned_country_names_codes_null_duplicates_dob_df['date_of_birth'].isna()]
+        
+        # log the number of rows that couldn't be converted in case of errors  
+        print('number of rows that convert to NaT', len(invalid_dates)) 
+
+        # log examples to check the conversion worked by printing an example of a difficult date
+        date_of_birth_converted_example = cleaned_country_names_codes_null_duplicates_dob_df.iloc[360]['date_of_birth']
+        print('again, the original date_of_birth before pd.to_datetime():\n', original_date_of_birth_example)
+        print('date_of_birth after pd.to_datetime:\n', date_of_birth_converted_example)
+
+        #log that the method has run 
+        print('clean_dob method has run... \n')
+
+        # return cleaned df 
+        return cleaned_country_names_codes_null_duplicates_dob_df
 
 
-    def drop_null_values(self):
+    def clean_join_date(self): #cleaning join_date 
+        
+        #log starting of method
+        print('started clean_join_date method...')
 
-        print('started drop_null_values method...')
-        cleaned_country_values_and_codes_df = self.clean_country_codes() 
+        # getting cleaned df 
+        cleaned_country_names_codes_null_duplicates_dob_jd_df = self.clean_dob()
 
-        # create a df of all null roles so that I can inspect them. (Because I want to know whether to drop them or not) 
+        # get an example from before the conversion so I can check if it works (I know the row indexed by 202 would need converting)
+        original_join_date_example = cleaned_country_names_codes_null_duplicates_dob_jd_df.iloc[202]['join_date']
+        print('original join_date:\n', original_join_date_example)
 
-        list_of_null_rows = cleaned_country_values_and_codes_df.query('country == "NULL" or country_code == "NULL"').index.tolist()
+        # Convert the join_date column to datetime, handling various formats
+        cleaned_country_names_codes_null_duplicates_dob_jd_df['join_date'] = pd.to_datetime(cleaned_country_names_codes_null_duplicates_dob_jd_df['join_date'], errors='coerce', format='mixed') 
 
-        #print(list_of_null_rows)
-        #print('length of null rows:', len(list_of_null_rows))
-        #print('before dropping rows:', len(cleaned_country_values_and_codes_df))
+        # Check which dates could not be converted
+        invalid_dates = cleaned_country_names_codes_null_duplicates_dob_jd_df[cleaned_country_names_codes_null_duplicates_dob_jd_df['join_date'].isna()]
+        
+        # log the number of rows that couldn't be converted in case of errors 
+        print('number of rows that convert to NaT', len(invalid_dates)) 
 
-        #null_rows_df = cleaned_country_values_and_codes_df.loc[list_of_null_rows]
+        # Check the conversion worked by printing an example of a difficult date
+        join_date_converted_example = cleaned_country_names_codes_null_duplicates_dob_jd_df.iloc[202]['join_date']
+        print('original join_date:\n', original_join_date_example)
+        print('join_date after pd.to_datetime:\n', join_date_converted_example)
 
-        #display(null_rows_df)
+        #log that the method has run 
+        print('clean_join_date method has run... \n')
 
-        #display(cleaned_country_values_and_codes_df)
+        return cleaned_country_names_codes_null_duplicates_dob_jd_df
 
-        #cleaned_country_values_and_codes_df = cleaned_country_values_and_codes_df.drop(index=[866, 1022, 1805, 2103, 2437, 2739, 2764, 4984, 5307, 6920, 7737, 10013, 10224, 10988, 11443, 11598, 11761, 11864, 12092, 12584, 13855])
+    def cleaning_text_fields(self): # clean the text: lower case,  
+        
+        #log starting of method
+        print('started clean_text_fields method...')
 
-        cleaned_country_values_and_codes_df = cleaned_country_values_and_codes_df.drop(index=list_of_null_rows)
+        # get the cleaned df  
+        cleaned_country_names_codes_null_duplicates_dob_jd_text_df = self.clean_join_date()
 
-        print('now after cleaning')
-        display(cleaned_country_values_and_codes_df)
-        print('after dropping rows:', len(cleaned_country_values_and_codes_df))
+        # get an example from before the conversion so I can check if it works (can be any index as they all need converting)
+        before_lower_case_example = cleaned_country_names_codes_null_duplicates_dob_jd_text_df.iloc[0]['first_name']
+        print('this is the name before transformation:', before_lower_case_example)
+
+        #convert first_name and last_name  
+        cleaned_country_names_codes_null_duplicates_dob_jd_text_df['first_name'] = cleaned_country_names_codes_null_duplicates_dob_jd_text_df['first_name'].str.lower()
+        cleaned_country_names_codes_null_duplicates_dob_jd_text_df['last_name'] = cleaned_country_names_codes_null_duplicates_dob_jd_text_df['last_name'].str.lower()
+
+        # log that it's worked 
+        after_lower_case_example = cleaned_country_names_codes_null_duplicates_dob_jd_text_df.iloc[0]['first_name']
+        print('this is the name after transformation:', after_lower_case_example)
+
+        # strip whitespace from first_name and last_name fields
+        cleaned_country_names_codes_null_duplicates_dob_jd_text_df['first_name'] = cleaned_country_names_codes_null_duplicates_dob_jd_text_df['first_name'].str.strip()
+        cleaned_country_names_codes_null_duplicates_dob_jd_text_df['last_name'] = cleaned_country_names_codes_null_duplicates_dob_jd_text_df['last_name'].str.strip()
+
+        #log that the method has run 
+        print('clean_text_fields method has run... \n')
+
+        # return the cleaned df 
+        return cleaned_country_names_codes_null_duplicates_dob_jd_text_df
+
 
 datacleaning_instance = DataCleaning() 
 
-datacleaning_instance.drop_null_values() 
+datacleaning_instance.cleaning_text_fields() 
 
 
 
 """
-
-# %%
-
-
-
-
-# %%
-#this is just checking text 
-print('this is the new_df country values:')
-print(cleaned_country_values_and_codes_df['country'].unique()) 
-
-print('this is new_df country_code:')
-print(cleaned_country_values_and_codes_df['country_code'].unique()) 
-
-# %%
-#cleaning date_of_birth
-cleaned_date_df = cleaned_country_values_and_codes_df.copy()
-
-# get reference from before the conversion so I can check if it works 
-original_date_of_birth_example = cleaned_date_df.iloc[360]['date_of_birth']
-print('original date_of_birth before pd.to_datetime():\n', original_date_of_birth_example)
-
-# Convert the 'date_of_birth' column to datetime, handling various formats
-cleaned_date_df['date_of_birth'] = pd.to_datetime(cleaned_date_df['date_of_birth'], errors='coerce', format='mixed')
-
-# Check which dates could not be converted
-invalid_dates = cleaned_date_df[cleaned_date_df['date_of_birth'].isna()]
-print('number of rows that convert to NaT', len(invalid_dates)) 
-display('these are the invalid dates:', invalid_dates)
-
-# Check the conversion worked by printing an example of a difficult date
-
-date_of_birth_converted_example = cleaned_date_df.iloc[360]['date_of_birth']
-print('again, the original date_of_birth before pd.to_datetime():\n', original_date_of_birth_example)
-print('date_of_birth after pd.to_datetime:\n', date_of_birth_converted_example)
-
-
-# %%
-#cleaning join_date 
-cleaned_join_date_df = cleaned_date_df.copy()
-
-#get a reference date to check it's worked 
-original_join_date_example = cleaned_join_date_df.iloc[202]['join_date']
-print('original join_date:\n', original_join_date_example)
-
-# Convert the join_date column to datetime, handling various formats
-cleaned_join_date_df['join_date'] = pd.to_datetime(cleaned_join_date_df['join_date'], errors='coerce', format='mixed') 
-
-# Check which dates could not be converted
-invalid_dates = cleaned_join_date_df[cleaned_join_date_df['join_date'].isna()]
-print('number of rows that convert to NaT', len(invalid_dates)) 
-display('these are the invalid dates:', invalid_dates)
-
-# Check the conversion worked by printing an example of a difficult date
-join_date_converted_example = cleaned_join_date_df.iloc[202]['join_date']
-print('original join_date:\n', original_join_date_example)
-print('join_date after pd.to_datetime:\n', join_date_converted_example)
-
-# %%
-#lower case text fields 
-lower_case_df = cleaned_join_date_df.copy()
-
-#getting an example 
-before_lower_case_example = lower_case_df.iloc[0]['first_name']
-print('this is the name before transformation:', before_lower_case_example)
-
-#convert it 
-lower_case_df['first_name'] = lower_case_df['first_name'].str.lower()
-lower_case_df['last_name'] = lower_case_df['last_name'].str.lower()
-
-# stripping whitespace 
-lower_case_df['first_name'] = lower_case_df['first_name'].str.strip()
-lower_case_df['last_name'] = lower_case_df['last_name'].str.strip()
-
-#dropping duplicates 
-print('row count before drop duplicates', len(lower_case_df)) 
-lower_case_df = lower_case_df.drop_duplicates()
-print('row count after drop duplicates', len(lower_case_df)) 
+Code to clean addresses if needed 
 
 #cleaning special characters and punctuation from addresses 
 #address_before_transformation = lower_case_df.iloc[0]['address']
