@@ -3,7 +3,6 @@ import pandas as pd
 from sqlalchemy import create_engine
 from sqlalchemy import insert
 from sqlalchemy.inspection import inspect
-from data_cleaning import DataCleaning
 
 class DatabaseConnector: 
     def _init__(self): 
