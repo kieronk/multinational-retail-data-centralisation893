@@ -75,7 +75,6 @@ example.list_db_tables()
 # I'm using this example dataframe to test it 
 # example_df = pd.DataFrame({'name' : ['User 1', 'User 2', 'User 3']})
 
-example.upload_to_db(cleaned_df_all, 'dim_users')
 
 
 
