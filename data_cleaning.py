@@ -201,17 +201,20 @@ class DataCleaning:
         #log that the method has run 
         print('clean_text_fields method has run... \n')
 
+        cleaned_df_all = cleaned_country_names_codes_null_duplicates_dob_jd_text_df
         # return the cleaned df 
-        return cleaned_country_names_codes_null_duplicates_dob_jd_text_df
+        return cleaned_df_all 
 
 
 # code below is to test that it works 
 
 datacleaning_instance = DataCleaning() 
 
-datacleaning_instance.cleaning_text_fields() 
+cleaned_df_all = datacleaning_instance.cleaning_text_fields() 
 
+data_utils_instance = DatabaseConnector() 
 
+data_utils_instance.upload_to_db(cleaned_df_all, 'dim_users')
 
 """
 Code to clean addresses if needed 

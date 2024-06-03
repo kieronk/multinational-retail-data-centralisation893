@@ -3,6 +3,7 @@ import pandas as pd
 from sqlalchemy import create_engine
 from sqlalchemy import insert
 from sqlalchemy.inspection import inspect
+from data_cleaning import DataCleaning
 
 class DatabaseConnector: 
     def _init__(self): 
@@ -33,14 +34,31 @@ class DatabaseConnector:
         return table_names
 
 
-    def upload_to_db(self, dataframe, table_name):
-        """
-        Uploads a Pandas DataFrame to the database as a new table.
+    def read_my_db_creds(self): # gets the credentails for my local db 
+        with open ('/Users/kk/Documents/ai_core/Data_engineering/multinational-retail-data-centralisation893/my_db_creds.yaml', 'r') as file: 
+            my_db_creds = yaml.safe_load(file)
+        print('my local db creds is working')
+        return my_db_creds
+    
+    def init_my_db_engine(self): # this creates the engine (the key) to use with the my local database  
+        my_db_creds = self.read_my_db_creds() #this gets the credentials by using the read_db_creds 
+        my_db_url = f"postgresql+psycopg2://{my_db_creds['USER']}:{my_db_creds['PASSWORD']}@{my_db_creds['HOST']}:{my_db_creds['PORT']}/{my_db_creds['DATABASE']}" #this makes a URL to connect to the database using the credentials 
 
-        :param dataframe: Pandas DataFrame to be uploaded.
-        :param table_name: Name of the table to be created in the database.
-        """
-        engine = self.init_db_engine() 
+        # Create the engine
+        engine = create_engine(my_db_url)       
+
+        # Test the connection
+        try:
+            with engine.connect() as connection:
+                print("Connection to the PostgreSQL database was successful!")
+        except Exception as e:
+            print(f"An error occurred: {e}")
+
+        return engine 
+
+    def upload_to_db(self, dataframe, table_name):
+        
+        engine = self.init_my_db_engine() 
 
         try:
             dataframe.to_sql(name=table_name, con=engine, if_exists='replace', index=False)
@@ -55,9 +73,9 @@ example.list_db_tables()
 
 # next stage is to try and get the upload_to_db function working.
 # I'm using this example dataframe to test it 
+# example_df = pd.DataFrame({'name' : ['User 1', 'User 2', 'User 3']})
 
-example_df = pd.DataFrame({'name' : ['User 1', 'User 2', 'User 3']})
+example.upload_to_db(cleaned_df_all, 'dim_users')
 
 
-example.upload_to_db(example_df, 'example_table')
 

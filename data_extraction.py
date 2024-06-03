@@ -55,7 +55,6 @@ class DataExtractor:
         # returns it 
         return dataframe
 
-
 # code below is to test that it works 
 
 # Create an instance of DataExtractor
