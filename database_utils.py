@@ -57,18 +57,24 @@ class DatabaseConnector:
 
     def upload_to_db(self, dataframe, table_name):
         
+        # run the init_my_db_engine method to get an engine running 
         engine = self.init_my_db_engine() 
 
+        #try to write the dataframe to sql database, 
+            # name = the name of the table where the df will written to
+            # con = the db connection object 
+            # if_exists = replace if exist already 
+            # index_false = don't write the df index as a seperate column in the SQL tabel 
         try:
-            dataframe.to_sql(name=table_name, con=engine, if_exists='replace', index=False)
+            dataframe.to_sql(name=table_name, con=engine, if_exists='replace', index=False) 
             print(f"Table '{table_name}' uploaded successfully.")
         except Exception as e:
             print(f"An error occurred while uploading the table: {e}")
 
 # test if code works   
-example = DatabaseConnector() 
-example.read_db_creds()
-example.list_db_tables()
+#example = DatabaseConnector() 
+#example.read_db_creds()
+#example.list_db_tables()
 
 # next stage is to try and get the upload_to_db function working.
 # I'm using this example dataframe to test it 
