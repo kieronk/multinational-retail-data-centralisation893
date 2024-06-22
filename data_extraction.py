@@ -1,5 +1,6 @@
 from sqlalchemy import MetaData, Table
 import pandas as pd
+import tabula
 from database_utils import DatabaseConnector
 
 class DataExtractor:
@@ -55,12 +56,31 @@ class DataExtractor:
         # returns it 
         return dataframe
 
+    def retrieve_pdf_data(self, pdf_path):         
+        #pdf_path = "https://data-handling-public.s3.eu-west-1.amazonaws.com/card_details.pdf" 
+        pdf_path = pdf_path
+        df = tabula.read_pdf(pdf_path, pages='all')  # read_pdf returns list of DataFrames      
+        combined_df = pd.concat(df, ignore_index=True)
+        # Display the combined DataFrame
+        
+        return combined_df 
+
+
+
+
 # code below is to test that it works 
 
 # Create an instance of DataExtractor
 instance = DataExtractor()
 
+combined_df = instance.retrieve_pdf_data('https://data-handling-public.s3.eu-west-1.amazonaws.com/card_details.pdf')
+
+print(combined_df.head(5)) 
+
+
+
+"""
 # Read data from the 'legacy_users' table
 df = instance.read_data_from_table('legacy_users')
-
+"""
 

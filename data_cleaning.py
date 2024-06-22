@@ -205,7 +205,58 @@ class DataCleaning:
         # return the cleaned df 
         return cleaned_df_all 
 
+    def clean_card_data(self):  
+        
 
+    # gettting the card data to clean 
+
+        #log starting of method
+        print('started clean_country_names method...')
+
+        # Create an instance of DataExtractor
+        instance = DataExtractor()
+
+        # Read data from the 'legacy_users' table
+        df = instance.read_data_from_table('legacy_users')  
+                
+        # create a list of the unique country values in the df 
+        list_of_country_names = df['country'].unique()
+
+
+
+    #cleaning expiry date column 
+        
+        # Define a regular expression pattern for the MM/YY format
+        pattern = r'^\d{2}/\d{2}$'
+
+        # Use str.match to filter rows where 'expiry_date' matches the pattern
+        df = df[df['expiry_date'].str.match(pattern)]
+
+        # Reset the index 
+        df = df.reset_index(drop=True)
+
+    #adding datetime version of expiry date for calculations 
+
+        df['datetime_expiry_date'] = pd.to_datetime(df['expiry_date'], format='%m/%y', errors='coerce')
+
+    # removing incorrect values from the card providers column 
+
+        #create a valid providers list  
+        valid_providers = ['Diners Club / Carte Blanche', 'American Express', 'JCB 16 digit','JCB 15 digit', 'Maestro', 'Mastercard', 'Discover','VISA 19 digit', 'VISA 16 digit', 'VISA 13 digit']
+
+        # Filter the DataFrame to keep only rows with valid card providers
+        df = df[df['card_provider'].isin(valid_providers)]
+
+        #Reset the index of the filtered DataFrame
+        df = df.reset_index(drop=True)
+
+
+
+# code below is to test that it works 
+
+datacleaning_instance = DataCleaning() 
+
+"""
 # code below is to test that it works 
 
 datacleaning_instance = DataCleaning() 
@@ -215,6 +266,16 @@ cleaned_df_all = datacleaning_instance.cleaning_text_fields()
 data_utils_instance = DatabaseConnector() 
 
 data_utils_instance.upload_to_db(cleaned_df_all, 'dim_users')
+
+import yaml
+
+with open('/Users/kk/Documents/ai_core/Data_engineering/multinational-retail-data-centralisation893/my_db_creds.yaml', 'r') as file_1:
+    creds_1 = yaml.safe_load(file_1)
+
+print(creds_1)  # Ensure this prints the updated credentials
+
+"""
+
 
 """
 Code to clean addresses if needed 
