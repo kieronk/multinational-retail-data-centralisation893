@@ -64,6 +64,14 @@ class DataExtractor:
         combined_df = pd.concat(df, ignore_index=True)                
         return combined_df 
 
+    def list_number_of_stores(self, store_endpoint, header):
+        store_endpoint = store_endpoint
+        header = {
+            'x-api-key': 'yFBQbwXe9J3sd6zWVAMrK6lcxxr0q1lr2PT6DDMX'
+        } 
+        
+
+        
 
 # code below is to test that it works 
 
