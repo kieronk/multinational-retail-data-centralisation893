@@ -1,6 +1,7 @@
 from sqlalchemy import MetaData, Table
 import pandas as pd
 import logging 
+import numpy as np
 from IPython.display import display
 from database_utils import DatabaseConnector
 from data_extraction import DataExtractor
@@ -257,6 +258,47 @@ class DataCleaning:
         cleaned_card_details_df = df 
         return cleaned_card_details_df
 
+    def cleaning_store_details(self):
+        
+        #creating instance of dataextractor 
+        instance = DataExtractor()
+        
+        #retrieving the data from the stores API
+        df = instance.retrieve_stores_data()  
+        
+        #dropping rows with NA and 'longitude' column as it's not useful without latitude  
+        df = df.dropna(axis=1)
+        df = df.drop(columns=['longitude'])
+        
+        # filtering out items in locality that aren't real place names or NULL 
+        pattern = r'^[a-zA-Z\s-]+$'
+        df = df[df['locality'].str.match(pattern)]
+        df['locality'] = df['locality'].replace('NULL', np.nan)
+        df = df.dropna(subset=['locality'])
+        
+        # replacing incorrect spellings of continents 
+        continent_replacements = {
+            'eeEurope': 'Europe',
+            'eeAmerica': 'America'
+        }
+
+        df['continent'] = df['continent'].replace(continent_replacements)
+        
+        #checking everything has worked 
+        print(df['continent'].unique())
+        print(df['store_type'].unique()) 
+        print(df['country_code'].unique()) 
+        print(df['continent'].unique())
+
+        # converting opening date to datetime object 
+        is_datetime_before = pd.api.types.is_datetime64_any_dtype(df['opening_date'])
+        df['opening_date'] = pd.to_datetime(df['opening_date'], format='%Y-%m-%d', errors='coerce')
+        is_datetime_after = pd.api.types.is_datetime64_any_dtype(df['opening_date'])
+        print(f"Is 'dates' column datetime64 dtype? {is_datetime_before}")
+        print(f"Is 'dates' column datetime64 dtype? {is_datetime_after}")
+
+        #returning the dataframe 
+        return df 
 
 # creating data cleaning instance needed for running the methods in this class 
 datacleaning_instance = DataCleaning() 
@@ -275,6 +317,12 @@ databaseconnector_instance.upload_to_db(cleaned_user_details_df, 'dim_users')
 
 #uploading the cleaned table from the PDF link to the SQL database 
 databaseconnector_instance.upload_to_db(cleaned_card_details_df, 'dim_card_details')
+
+# fetching and cleanming the store data via the API 
+cleaned_store_info_df = datacleaning_instance.cleaning_store_details()
+
+#uploading the cleaned store data from the API to the SQL database 
+databaseconnector_instance.upload_to_db(cleaned_store_info_df, ' dim_store_details')
 
 """
 import yaml
