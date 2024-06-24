@@ -2,11 +2,19 @@ from sqlalchemy import MetaData, Table
 import pandas as pd
 import tabula
 import logging
+import requests
 from database_utils import DatabaseConnector
+
+logging.basicConfig(filename='api_client.log', level=logging.INFO,
+                    format='%(asctime)s:%(levelname)s:%(message)s')
+
 
 class DataExtractor:
     def __init__(self):
-        pass
+        self.no_stores_endpoint = 'https://aqj7u5id95.execute-api.eu-west-1.amazonaws.com/prod/number_stores'
+        self.header = {
+            'x-api-key': 'yFBQbwXe9J3sd6zWVAMrK6lcxxr0q1lr2PT6DDMX'
+        }  
 
     def read_data_from_table(self, table_name): # this method gets the data from the table 
         
@@ -63,13 +71,41 @@ class DataExtractor:
         df = tabula.read_pdf(pdf_path, pages='all')  # read_pdf returns list of DataFrames      
         combined_df = pd.concat(df, ignore_index=True)                
         return combined_df 
-
-    def list_number_of_stores(self, store_endpoint, header):
-        store_endpoint = store_endpoint
-        header = {
-            'x-api-key': 'yFBQbwXe9J3sd6zWVAMrK6lcxxr0q1lr2PT6DDMX'
-        } 
+   
+    def list_number_of_stores(self):
+        try: 
+            with requests.get(self.no_stores_endpoint, headers=self.header) as response: 
+                response.raise_for_status()  # Raise an HTTPError for bad responses (4xx and 5xx)
+                print(response.json())
+                return response.json()
         
+        except requests.exceptions.RequestException as e:
+            print(f'An error occurred: {e}')
+            return None
+
+    def retrieve_stores_data(self):   
+        all_data = []
+        for i in range (0, 3): #451 
+            #print('started')
+            store_suffix = str(i) 
+            store_info_endpoint = f'https://aqj7u5id95.execute-api.eu-west-1.amazonaws.com/prod/store_details/{store_suffix}'  
+            #print(store_suffix)
+            #print(store_info_endpoint)
+            try: 
+                with requests.get(store_info_endpoint, headers=self.header) as response:
+                    response.raise_for_status()  # Check for HTTP errors
+                    data = response.json()
+                    all_data.append(response.json())
+            except requests.exceptions.RequestException as e:
+                print(f'An error occurred: {e}')
+                return None
+        df = pd.DataFrame(all_data) 
+        print(df)
+        return df 
+
+instance = DataExtractor()
+instance.list_number_of_stores()
+instance.retrieve_stores_data() 
 
         
 
