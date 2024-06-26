@@ -3,6 +3,11 @@ import pandas as pd
 import tabula
 import logging
 import requests
+import boto3
+import pandas as pd
+from io import StringIO
+from io import BytesIO
+import re
 from database_utils import DatabaseConnector
 
 logging.basicConfig(filename='api_client.log', level=logging.INFO,
@@ -103,11 +108,42 @@ class DataExtractor:
         print(df)
         return df 
 
-instance = DataExtractor()
-instance.list_number_of_stores()
-instance.retrieve_stores_data() 
 
+    def extract_from_s3(self, s3_uri):
+    
+        #extract the bucket name and key from the URI 
+        uri = re.match(r's3://([^/]+)/(.+)', s3_uri)
+        if not uri:
+            raise ValueError(f"Invalid S3 URI: {s3_uri}")
+        bucket = uri.group(1)
+        key = uri.group(2)
+        #print('bucket name is:', bucket, '; key name is', key)
         
+        #create a client (like a customer service representative going to talk to the S3 dept for me)
+        s3 = boto3.client('s3')
+    
+        # Using a context manager to handle the BytesIO buffer
+        with BytesIO() as buffer:
+            # Download the file from S3 into the buffer
+            s3.download_fileobj(bucket, key, buffer)
+        
+            # Move to the beginning of the buffer to read its content
+            buffer.seek(0)
+            
+            # Load the data into a pandas DataFrame
+            df = pd.read_csv(buffer)
+            
+        return df 
+
+
+
+
+instance = DataExtractor()
+#instance.list_number_of_stores()
+#instance.retrieve_stores_data() 
+
+example = instance.extract_from_s3('s3://data-handling-public/products.csv')
+print(example)
 
 # code below is to test that it works 
 

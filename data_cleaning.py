@@ -2,6 +2,7 @@ from sqlalchemy import MetaData, Table
 import pandas as pd
 import logging 
 import numpy as np
+import re 
 from IPython.display import display
 from database_utils import DatabaseConnector
 from data_extraction import DataExtractor
@@ -300,6 +301,46 @@ class DataCleaning:
         #returning the dataframe 
         return df 
 
+
+
+    def convert_weights_to_kg(self): #should contain self
+        
+        #creating instance of dataextractor 
+        instance = DataExtractor()
+            
+        #retrieving the data from the stores API
+        df = instance.extract_from_s3('s3://data-handling-public/products.csv') 
+        
+        # Define the regex pattern to match numbers and letters
+        pattern = re.compile(r'([0-9.]+)([a-zA-Z]+)')
+
+        # Conversion factors to kg
+        conversion_factors = {
+            'kg': 1,
+            'g': 0.001,
+            'oz': 0.0283495231,
+            'ml': 0.001  # Assuming ml is equivalent to grams for water-based products
+        }
+
+        def convert_to_kg(weight):
+            if pd.isna(weight):
+                return None  # Handle NaN values
+            match = pattern.match(str(weight))
+            if match:
+                number = float(match.group(1))  # Extract the numeric part
+                unit = match.group(2).lower()  # Extract the unit part
+                return number * conversion_factors.get(unit, 0)  # Convert to kg
+            return None  # Handle cases where regex does not match
+
+        # Apply the conversion to the 'weights' column
+        df['weight_in_kg'] = df['weight'].apply(convert_to_kg) # self.df['weight_in_kg'] = self.df['weights'].apply(convert_to_kg)
+
+
+
+
+
+# TESTING / CALLING CODE 
+
 # creating data cleaning instance needed for running the methods in this class 
 datacleaning_instance = DataCleaning() 
 
@@ -307,22 +348,31 @@ datacleaning_instance = DataCleaning()
 databaseconnector_instance = DatabaseConnector() 
 
 # cleaning the text fields in the legacy users table 
-cleaned_user_details_df = datacleaning_instance.cleaning_text_fields() 
+#cleaned_user_details_df = datacleaning_instance.cleaning_text_fields() 
 
 #cleaning the card data from the PDF link 
-cleaned_card_details_df = datacleaning_instance.clean_card_data()
+#cleaned_card_details_df = datacleaning_instance.clean_card_data()
 
 #uploading the cleaned legacy users table to the SQL database 
-databaseconnector_instance.upload_to_db(cleaned_user_details_df, 'dim_users')
+#databaseconnector_instance.upload_to_db(cleaned_user_details_df, 'dim_users')
 
 #uploading the cleaned table from the PDF link to the SQL database 
-databaseconnector_instance.upload_to_db(cleaned_card_details_df, 'dim_card_details')
+#databaseconnector_instance.upload_to_db(cleaned_card_details_df, 'dim_card_details')
 
 # fetching and cleanming the store data via the API 
-cleaned_store_info_df = datacleaning_instance.cleaning_store_details()
+#cleaned_store_info_df = datacleaning_instance.cleaning_store_details()
 
 #uploading the cleaned store data from the API to the SQL database 
-databaseconnector_instance.upload_to_db(cleaned_store_info_df, ' dim_store_details')
+#databaseconnector_instance.upload_to_db(cleaned_store_info_df, ' dim_store_details')
+
+#fetching and weight conversion on product details 
+cleaned_product_details_df = datacleaning_instance.convert_weights_to_kg() 
+
+#START HERE AFTER 26th JUNE
+
+print(cleaned_product_details_df) #last piece of work: this doesn't seem to be working I can't see the converted weights 
+
+
 
 """
 import yaml
