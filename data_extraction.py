@@ -7,6 +7,7 @@ import boto3
 import pandas as pd
 from io import StringIO
 from io import BytesIO
+from urllib.parse import urlparse
 import re
 from database_utils import DatabaseConnector
 
@@ -109,18 +110,26 @@ class DataExtractor:
         return df 
 
 
-    def extract_from_s3(self, s3_uri):
-    
-        #extract the bucket name and key from the URI 
-        uri = re.match(r's3://([^/]+)/(.+)', s3_uri)
-        if not uri:
-            raise ValueError(f"Invalid S3 URI: {s3_uri}")
-        bucket = uri.group(1)
-        key = uri.group(2)
-        #print('bucket name is:', bucket, '; key name is', key)
+    def extract_from_s3(self, uri):
+
+        print('started extract from self')
         
+        parsed_url = urlparse(uri)
+        
+        if parsed_url.scheme == 'https':
+            bucket = parsed_url.netloc.split('.')[0]
+            key = parsed_url.path.lstrip('/')
+        elif parsed_url.scheme == 's3':
+            bucket = parsed_url.netloc
+            key = parsed_url.path.lstrip('/')
+        else:
+            raise ValueError(f"Invalid URI scheme: {parsed_url.scheme}")
+
         #create a client (like a customer service representative going to talk to the S3 dept for me)
         s3 = boto3.client('s3')
+    
+        # Check the file extension to determine the format
+        file_extension = key.split('.')[-1].lower()
     
         # Using a context manager to handle the BytesIO buffer
         with BytesIO() as buffer:
@@ -130,20 +139,27 @@ class DataExtractor:
             # Move to the beginning of the buffer to read its content
             buffer.seek(0)
             
-            # Load the data into a pandas DataFrame
-            df = pd.read_csv(buffer)
-            
+            # Check if file extension is csv or json, and then load the data into a pandas DataFrame accordingly
+            if file_extension == 'csv':
+                df = pd.read_csv(buffer)
+            elif file_extension == 'json':
+                df = pd.read_json(buffer)
+            else:
+                raise ValueError(f"Unsupported file extension: {file_extension}")
+        
+        print('ran extract_from_self')
         return df 
 
 
+#instance = DataExtractor()
+#df = instance.extract_from_s3('https://data-handling-public.s3.eu-west-1.amazonaws.com/date_details.json')
 
-
-instance = DataExtractor()
+print(df)
 #instance.list_number_of_stores()
 #instance.retrieve_stores_data() 
 
-example = instance.extract_from_s3('s3://data-handling-public/products.csv')
-print(example)
+#example = instance.extract_from_s3('s3://data-handling-public/products.csv')
+#print(example)
 
 # code below is to test that it works 
 
@@ -154,6 +170,16 @@ print(example)
 
 #print(combined_df.head(5)) 
 
+#---- 
+# Read data from the 'legacy_users' table
+
+#table = instance.read_rds_table() 
+
+#print(table)
+
+#orders_data_df = instance.read_data_from_table('orders_table')
+
+#print(orders_data_df)
 
 
 """

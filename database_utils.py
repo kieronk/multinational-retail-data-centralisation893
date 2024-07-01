@@ -76,10 +76,6 @@ class DatabaseConnector:
 #example.read_db_creds()
 #example.list_db_tables()
 
-# next stage is to try and get the upload_to_db function working.
-# I'm using this example dataframe to test it 
-# example_df = pd.DataFrame({'name' : ['User 1', 'User 2', 'User 3']})
-
 
 
 

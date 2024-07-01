@@ -11,8 +11,8 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(level
 
 class DataCleaning: 
     def __init__ (self):
-         self.logger = logging.getLogger(self.__class__.__name__)
- 
+        self.logger = logging.getLogger(self.__class__.__name__)
+        instance = DataExtractor() 
        
     def clean_country_names(self): #this 
         
@@ -302,15 +302,14 @@ class DataCleaning:
         return df 
 
 
-
-    def convert_weights_to_kg(self): #should contain self
+    def convert_weights_to_kg(self):
         
         #creating instance of dataextractor 
         instance = DataExtractor()
             
         #retrieving the data from the stores API
         df = instance.extract_from_s3('s3://data-handling-public/products.csv') 
-        
+                
         # Define the regex pattern to match numbers and letters
         pattern = re.compile(r'([0-9.]+)([a-zA-Z]+)')
 
@@ -331,11 +330,29 @@ class DataCleaning:
                 unit = match.group(2).lower()  # Extract the unit part
                 return number * conversion_factors.get(unit, 0)  # Convert to kg
             return None  # Handle cases where regex does not match
-
+     
         # Apply the conversion to the 'weights' column
         df['weight_in_kg'] = df['weight'].apply(convert_to_kg) # self.df['weight_in_kg'] = self.df['weights'].apply(convert_to_kg)
 
+        return df 
 
+    def clean_orders_data(self):
+        print('started clean_orders_data')
+        instance = DataExtractor()
+        df = instance.read_data_from_table('orders_table')
+        df = df.drop('1', axis=1)
+        df = df.drop('first_name', axis=1)
+        df = df.drop('last_name', axis=1)
+        print('about to return df clean_orders_data')
+        print(df)
+        return df 
+
+    def clean_date_events(self):
+        instance = DataExtractor()
+        df = instance.extract_from_s3('https://data-handling-public.s3.eu-west-1.amazonaws.com/date_details.json')
+        year_regex = r'^\d{4}$'
+        df = df[df['year'].str.match(year_regex)]
+        return df 
 
 
 
@@ -363,15 +380,25 @@ databaseconnector_instance = DatabaseConnector()
 #cleaned_store_info_df = datacleaning_instance.cleaning_store_details()
 
 #uploading the cleaned store data from the API to the SQL database 
-#databaseconnector_instance.upload_to_db(cleaned_store_info_df, ' dim_store_details')
+#databaseconnector_instance.upload_to_db(cleaned_store_info_df, 'dim_store_details')
 
-#fetching and weight conversion on product details 
-cleaned_product_details_df = datacleaning_instance.convert_weights_to_kg() 
+#fetching and cleaning weight conversion on product details 
+#cleaned_product_details_df = datacleaning_instance.convert_weights_to_kg() 
 
-#START HERE AFTER 26th JUNE
+#uploading the cleaned product details from S3 to the SQL database 
+#databaseconnector_instance.upload_to_db(cleaned_product_details_df, 'dim_products')
 
-print(cleaned_product_details_df) #last piece of work: this doesn't seem to be working I can't see the converted weights 
+#fetching and cleaning order details  
+#cleaned_orders_df = datacleaning_instance.clean_orders_data()
 
+#uploading the cleaned order details to the SQL database 
+#databaseconnector_instance.upload_to_db(cleaned_orders_df, 'orders_table')
+
+#uploading the cleaned date events to the SQL database 
+cleaned_date_events_df = datacleaning_instance.clean_date_events()
+
+#uploading the cleaned order details to the SQL database 
+databaseconnector_instance.upload_to_db(cleaned_date_events_df, 'dim_date_times')
 
 
 """
