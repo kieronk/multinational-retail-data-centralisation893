@@ -1,7 +1,5 @@
 #Centralisation of data for retail organisation 
   
-##Table of Contents, if the README file is long
-
 Overview 
 The project brings together a series of data from different locations and puts them into a postgres database in order that they can be analysed further. 
 
