@@ -1,91 +1,100 @@
-from sqlalchemy import MetaData, Table
 import pandas as pd
 import logging 
 import numpy as np
 import re 
 from IPython.display import display
+from sqlalchemy import MetaData, Table
 from database_utils import DatabaseConnector
 from data_extraction import DataExtractor
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 class DataCleaning: 
+    
+    """
+    This class contains the methods to clean the data extracted using methods from the DataExtractor class 
+
+    Attributes: 
+        logger: logging is initialised to facilitate logging used in some of the methods  
+    
+    """
+    
     def __init__ (self):
         self.logger = logging.getLogger(self.__class__.__name__)
-        instance = DataExtractor() 
+        #instance = DataExtractor() 
        
     def clean_country_names(self): #this 
         
-        #log starting of method
-        print('started clean_country_names method...')
+        """
+        This method extracts and cleans the table of country names from the database using boolean indexing 
+        
+        Args: 
+            None 
 
-        # Create an instance of DataExtractor
+        Returns: 
+            dataframe: A dataframe of the cleaned country names 
+        """
+                    
+        #log starting of method
+        print('clean_country_names is working')
+
+        # Create an instance of DataExtractor so that I can use it's methods 
         instance = DataExtractor()
 
-        # Read data from the 'legacy_users' table
+        # Read data from the 'legacy_users' table using the DataExtractor method 
         df = instance.read_data_from_table('legacy_users')  
-                
-        # create a list of the unique country values in the df 
-        list_of_country_names = df['country'].unique()
-
-        # create a list of values to exlude to exclude
-        exclude_list = ['Germany', 'United Kingdom', 'United States', 'NULL']
-
-        # Create a new list excluding the specified elements
-        list_of_names_to_drop = [item for item in list_of_country_names if item not in exclude_list]
-
-        # Convert the list to a string that can be used in the query
-        query_str = 'country in @list_of_names_to_drop'
-
-        # Get the indices of the rows that match any value in my_list and store them in a list 
-        list_of_indices = df.query(query_str).index.tolist()
-
-        # create a new dataframe, which is copy of the dataframe with the unwanted rows dropped 
-        cleaned_country_names_df = df.drop(index=list_of_indices)
         
-        #log whether the method has run correctly 
-        #print('unique values in original dataframe:')
-        #print(df['country'].unique(), '\n') 
-        #print('unique values in new dataframe:')
-        #print(cleaned_country_names_df['country'].unique(), '\n')  
-
-        #log that the method has run 
-        print('clean_country_names method has run... \n')
+        # regex pattern for filtering out names that contain numbers, special characters (apart from '-')  
+        pattern = r'^[a-zA-Z\s-]+$'
         
-        #return the cleaned df 
+        #filters the data frame on 2 boolean indexes: the regex boolean index and whether it contains 'NULL' 
+        cleaned_country_names_df = df[df['country'].str.match(pattern) & (df['country'] != 'NULL')]
+        
+        #return the cleaned dataframe 
         return cleaned_country_names_df
 
 
     def clean_country_codes(self): #this is correcting the GGB in country codes to GB
         
-        # log that the clean_country_codes method has started 
-        print('started clean_country_codes method...')
+        """
+        This method takes the dataframe from the clean_country_names method and further cleans it by replacing incorrect country codes 
+        
+        Args: 
+            None 
+
+        Returns: 
+            dataframe: A dataframe of the cleaned country names and codes 
+        """
+                    
+        #log starting of method
+        print('clean_country_codes is working')
         
         # running clean_country_names method to get the df
-        cleaned_country_names_df = self.clean_country_names() 
-        
-        # create a copy of the clean_country_names dataframe
-        cleaned_country_names_codes_df = cleaned_country_names_df.copy()
+        cleaned_country_names_codes_df = self.clean_country_names()  
 
         # replace 'GGB' with 'GB' in the 'country_code' column of the cleaned_country_names_and_codes_df
         cleaned_country_names_codes_df['country_code'] = cleaned_country_names_codes_df['country_code'].replace('GGB', 'GB')
-
-        # log the country_codes before and after cleaning to check that it's worked 
-        #print('ths is cleaned_country_names_df:', cleaned_country_names_df['country_code'].unique(), '\n') 
-        #print('ths is cleaned_country_names__and_codes_df:', cleaned_country_names_codes_df['country_code'].unique(), '\n') 
-
-        #log that the method has run 
-        print('clean_country_codes method has run... \n')
 
         #return the cleaned df 
         return cleaned_country_names_codes_df
 
 
-    def drop_null_values_and_duplicates(self): # this drops the rows with NULL values and duplicate rows 
+    def drop_null_values_and_duplicates(self): # 
 
-        # log that the method has started 
-        print('started drop_null_values_and_duplicates method...')
+        """
+        This method takes the dataframe from the clean_country_names method and further cleans it by replacing incorrect country codes 
+        this drops the rows with NULL values and duplicate rows 
         
+        Args: 
+            None 
+
+        Returns: 
+            dataframe: A dataframe of the cleaned country names and codes 
+        """
+                    
+        #log starting of method
+        print('drop_null_values_and_duplicates is working')
+      
         # create a copy of the cleaned df
         cleaned_country_names_codes_null_duplicates_df = self.clean_country_codes() 
 
@@ -356,6 +365,12 @@ class DataCleaning:
 
 
 
+#START HERE FROM 3/7/24
+#sort out github issue about bieng out of sync and try a merge 
+# test the refactor of clean_country_names works and put it into the main code 
+# clean up the rest of data_cleaning 
+#add api key yaml to the ignore list for github 
+
 # TESTING / CALLING CODE 
 
 # creating data cleaning instance needed for running the methods in this class 
@@ -363,6 +378,9 @@ datacleaning_instance = DataCleaning()
 
 # creating database connector instance needed for running the methods in database_utils file  
 databaseconnector_instance = DatabaseConnector() 
+
+# fetching and cleaning country nams 
+datacleaning_instance.clean_country_codes() 
 
 # cleaning the text fields in the legacy users table 
 #cleaned_user_details_df = datacleaning_instance.cleaning_text_fields() 
@@ -395,10 +413,10 @@ databaseconnector_instance = DatabaseConnector()
 #databaseconnector_instance.upload_to_db(cleaned_orders_df, 'orders_table')
 
 #uploading the cleaned date events to the SQL database 
-cleaned_date_events_df = datacleaning_instance.clean_date_events()
+#cleaned_date_events_df = datacleaning_instance.clean_date_events()
 
 #uploading the cleaned order details to the SQL database 
-databaseconnector_instance.upload_to_db(cleaned_date_events_df, 'dim_date_times')
+#databaseconnector_instance.upload_to_db(cleaned_date_events_df, 'dim_date_times')
 
 
 """

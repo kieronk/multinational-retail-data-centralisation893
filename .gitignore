@@ -6,4 +6,10 @@ db_creds.yaml
 
 my_db_creds.yaml
 
+/Users/kk/Documents/ai_core/Data_engineering/multinational-retail-data-centralisation893/api_key.yaml
 
+api_key.yaml
+
+# Ignore all YAML files in any directory
+
+*.yaml
