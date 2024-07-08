@@ -153,7 +153,7 @@ class DataExtractor:
         try: 
             with requests.get(self.no_stores_endpoint, headers=headers) as response: 
                 response.raise_for_status()  # Raise an HTTPError for bad responses (4xx and 5xx)
-                print(response.json())
+                #print(response.json())
                 return response.json()
         
         except requests.exceptions.RequestException as e:

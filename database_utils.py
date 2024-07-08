@@ -77,14 +77,14 @@ class DatabaseConnector:
         # this uses a context manager to read the api key from a yaml file 
         with open ('/Users/kk/Documents/ai_core/Data_engineering/multinational-retail-data-centralisation893/api_key.yaml', 'r') as file: 
             config = yaml.safe_load(file) # safe load loads the content of the YAML file into a dictionary, and assigns it to a variable header   
-            print(config)
+            #print(config)
         # Extract the API key and create the header
         api_key = config.get('api_key')
         if not api_key:
             raise ValueError("API key not found in the YAML file")
         
         headers = {'x-api-key': api_key}
-
+        
         # return the headers for use in other methods 
         return headers 
     

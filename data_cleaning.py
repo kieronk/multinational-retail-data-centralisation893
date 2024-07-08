@@ -15,15 +15,16 @@ class DataCleaning:
     This class contains the methods to clean the data extracted using methods from the DataExtractor class 
 
     Attributes: 
+        self.df: used to chain the cleaning methods on the 'legacy_users' data together 
         logger: logging is initialised to facilitate logging used in some of the methods  
     
     """
     
-    def __init__ (self):
+    def __init__ (self, df=None):
+        self.df = df
         self.logger = logging.getLogger(self.__class__.__name__)
-        #instance = DataExtractor() 
        
-    def clean_country_names(self): #this 
+    def clean_country_names(self):  
         
         """
         This method extracts and cleans the table of country names from the database using boolean indexing 
@@ -42,22 +43,22 @@ class DataCleaning:
         instance = DataExtractor()
 
         # Read data from the 'legacy_users' table using the DataExtractor method 
-        df = instance.read_data_from_table('legacy_users')  
+        self.df = instance.read_data_from_table('legacy_users')  
         
         # regex pattern for filtering out names that contain numbers, special characters (apart from '-')  
         pattern = r'^[a-zA-Z\s-]+$'
         
         #filters the data frame on 2 boolean indexes: the regex boolean index and whether it contains 'NULL' 
-        cleaned_country_names_df = df[df['country'].str.match(pattern) & (df['country'] != 'NULL')]
-        
+        self.df = self.df[self.df['country'].str.match(pattern)] # & (df['country'] != 'NULL')]
+    
         #return the cleaned dataframe 
-        return cleaned_country_names_df
+        return self
 
 
-    def clean_country_codes(self): #this is correcting the GGB in country codes to GB
+    def clean_country_codes(self):
         
         """
-        This method takes the dataframe from the clean_country_names method and further cleans it by replacing incorrect country codes 
+        This method replaces incorrect country codes 
         
         Args: 
             None 
@@ -68,22 +69,19 @@ class DataCleaning:
                     
         #log starting of method
         print('clean_country_codes is working')
-        
-        # running clean_country_names method to get the df
-        cleaned_country_names_codes_df = self.clean_country_names()  
 
         # replace 'GGB' with 'GB' in the 'country_code' column of the cleaned_country_names_and_codes_df
-        cleaned_country_names_codes_df['country_code'] = cleaned_country_names_codes_df['country_code'].replace('GGB', 'GB')
+        self.df['country_code'] = self.df['country_code'].replace('GGB', 'GB')
 
         #return the cleaned df 
-        return cleaned_country_names_codes_df
+        return self
 
 
-    def drop_null_values_and_duplicates(self): # 
+    def drop_null_values_and_duplicates(self): 
 
         """
-        This method takes the dataframe from the clean_country_names method and further cleans it by replacing incorrect country codes 
-        this drops the rows with NULL values and duplicate rows 
+        This method drops rows in the 'country' and 'country_code' columns with NULL values
+        Then it drops any duplicate rows 
         
         Args: 
             None 
@@ -94,137 +92,169 @@ class DataCleaning:
                     
         #log starting of method
         print('drop_null_values_and_duplicates is working')
-      
-        # create a copy of the cleaned df
-        cleaned_country_names_codes_null_duplicates_df = self.clean_country_codes() 
 
-        # create a list of all null roles  
-        list_of_null_rows = cleaned_country_names_codes_null_duplicates_df.query('country == "NULL" or country_code == "NULL"').index.tolist()
+        # filter the dataframe to exclude rows where both the country and country_code columns have the value 'NULL'
+        self.df = self.df[(self.df['country']!= 'NULL') | (self.df['country_code'] != 'NULL')]
 
-        # log the number of null rows
-        #print('length of null rows:', len(list_of_null_rows))
-        
-        # log the number of rows in the df before dropping rows 
-        #print('before dropping rows:', len(cleaned_country_names_codes_null_duplicates_df))
- 
-        # drop the rows with null values 
-        cleaned_country_names_codes_null_duplicates_df = cleaned_country_names_codes_null_duplicates_df.drop(index=list_of_null_rows)
-        
-        # log the number of rows in the df after dropping rows 
-        #print('after dropping rows:', len(cleaned_country_names_codes_null_duplicates_df))
-
-        #dropping duplicates 
-        #print('row count before drop duplicates', len(cleaned_country_names_codes_null_duplicates_df)) 
-        #cleaned_country_names_codes_null_duplicates_df = cleaned_country_names_codes_null_duplicates_df.drop_duplicates()
-        #print('row count after drop duplicates', len(cleaned_country_names_codes_null_duplicates_df)) 
-
-        #log that the method has run 
-        print('drop_null_values_and_duplicates method has run... \n')
+        # drop the duplicates from the dataframe directly ('in place')  
+        self.df = self.df.drop_duplicates()
 
         # return the cleaned df 
-        return cleaned_country_names_codes_null_duplicates_df
-    
+        return self
+
     def clean_dob(self): #cleaning date_of_birth
         
-        #log starting of method
-        print('started clean_dob method...')
-
-        # get the cleaned df
-        cleaned_country_names_codes_null_duplicates_dob_df = self.drop_null_values_and_duplicates()
-
-        # get an example from before the conversion so I can check if it works (I know the row indexed by 360 would need converting)
-        original_date_of_birth_example = cleaned_country_names_codes_null_duplicates_dob_df.iloc[360]['date_of_birth']
+        """
+        This method converts the 'date_of_birth' column to datetime format, 
+        then drops any invalid dates by dropping 'NaT' 
         
-        # log before the conversion so that I can check it works 
-        #print('original date_of_birth before pd.to_datetime():\n', original_date_of_birth_example)
+        Args: 
+            None 
+
+        Returns: 
+            dataframe: A dataframe with cleaned dob formatted as datetime 
+        """
+
+        #log starting of method
+        print('clean_dob method is working')
+
+        # DEBUGGING: get an example from before the conversion so I can check if it works (I know the row indexed by 360 would need converting)
+        #original_date_of_birth_example = cleaned_dob_df.iloc[360]['date_of_birth']
 
         # convert the 'date_of_birth' column to datetime, handling the different formats
-        cleaned_country_names_codes_null_duplicates_dob_df['date_of_birth'] = pd.to_datetime(cleaned_country_names_codes_null_duplicates_dob_df['date_of_birth'], errors='coerce', format='mixed')
+        self.df['date_of_birth'] = pd.to_datetime(self.df['date_of_birth'], errors='coerce', format='mixed')
 
-        # Check which dates could not be converted
-        invalid_dates = cleaned_country_names_codes_null_duplicates_dob_df[cleaned_country_names_codes_null_duplicates_dob_df['date_of_birth'].isna()]
+        # DEBUGGING: Check which dates could not be converted
+        #invalid_dates = cleaned_dob_df[cleaned_dob_df['date_of_birth'].isna()]
         
-        # log the number of rows that couldn't be converted in case of errors  
+        # DEBUGGING: log the number of rows that couldn't be converted in case of errors  
         #print('number of rows that convert to NaT', len(invalid_dates)) 
 
-        # log examples to check the conversion worked by printing an example of a difficult date
-        #date_of_birth_converted_example = cleaned_country_names_codes_null_duplicates_dob_df.iloc[360]['date_of_birth']
-        #print('again, the original date_of_birth before pd.to_datetime():\n', original_date_of_birth_example)
+        # DEBUGGING: log examples to check the conversion worked by printing an example of a difficult date
+        #date_of_birth_converted_example = cleaned_dob_df.iloc[360]['date_of_birth']
+        #print('the original date_of_birth before pd.to_datetime():\n', original_date_of_birth_example)
         #print('date_of_birth after pd.to_datetime:\n', date_of_birth_converted_example)
 
-        #log that the method has run 
-        print('clean_dob method has run... \n')
+        # dropping rows with NaT values
+        self.df = self.df.dropna(subset=['date_of_birth'])
 
         # return cleaned df 
-        return cleaned_country_names_codes_null_duplicates_dob_df
-
+        return self
 
     def clean_join_date(self): #cleaning join_date 
         
+        """
+        This method converts the 'join_date' column to datetime format, 
+        then drops any invalid dates by dropping 'NaT' 
+        
+        Args: 
+            None 
+
+        Returns: 
+            dataframe: A dataframe with cleaned join date 
+        """
+
         #log starting of method
-        print('started clean_join_date method...')
+        print('clean_join_date is working')
 
-        # getting cleaned df 
-        cleaned_country_names_codes_null_duplicates_dob_jd_df = self.clean_dob()
-
-        # get an example from before the conversion so I can check if it works (I know the row indexed by 202 would need converting)
-        original_join_date_example = cleaned_country_names_codes_null_duplicates_dob_jd_df.iloc[202]['join_date']
+        #DEBUGGING: get an example from before the conversion so I can check if it works (I know the row indexed by 202 would need converting)
+        #original_join_date_example = self.df.iloc[202]['join_date']
 
         # Convert the join_date column to datetime, handling various formats
-        cleaned_country_names_codes_null_duplicates_dob_jd_df['join_date'] = pd.to_datetime(cleaned_country_names_codes_null_duplicates_dob_jd_df['join_date'], errors='coerce', format='mixed') 
+        self.df['join_date'] = pd.to_datetime(self.df['join_date'], errors='coerce', format='mixed') 
 
-        # Check which dates could not be converted
-        invalid_dates = cleaned_country_names_codes_null_duplicates_dob_jd_df[cleaned_country_names_codes_null_duplicates_dob_jd_df['join_date'].isna()]
+        # DEBUGGING: Check which dates could not be converted
+        #invalid_dates = self.df[self.df['join_date'].isna()]
         
-        # log the number of rows that couldn't be converted in case of errors 
-        print('number of rows that convert to NaT', len(invalid_dates)) 
+        # DEBUGGING: log the number of rows that couldn't be converted in case of errors 
+        #print('number of rows that convert to NaT', len(invalid_dates)) 
 
-        # Check the conversion worked by printing an example of a difficult date
-        #join_date_converted_example = cleaned_country_names_codes_null_duplicates_dob_jd_df.iloc[202]['join_date']
+        # DEBUGGING: Check the conversion worked by printing an example of a difficult date
+        #join_date_converted_example = self.df.iloc[202]['join_date']
         #print('original join_date:\n', original_join_date_example)
         #print('join_date after pd.to_datetime:\n', join_date_converted_example)
 
-        #log that the method has run 
-        print('clean_join_date method has run... \n')
+        # dropping rows with NaT values
+        self.df = self.df.dropna(subset=['join_date'])
 
-        return cleaned_country_names_codes_null_duplicates_dob_jd_df
+        return self 
 
-    def cleaning_text_fields(self): # clean the text: lower case,  
+
+    def cleaning_text_fields(self):   
+        """
+        This method clean the columns 'first_name' and 'last_name' by converting them to lower case and removing white spaces  
         
+        Args: 
+            None 
+
+        Returns: 
+            dataframe: A dataframe with cleaned 'first_name' and 'last_name' columns
+        """
+
         #log starting of method
-        print('started clean_text_fields method...')
+        print('clean_text_fields is working')
 
-        # get the cleaned df  
-        cleaned_country_names_codes_null_duplicates_dob_jd_text_df = self.clean_join_date()
-
-        # get an example from before the conversion so I can check if it works (can be any index as they all need converting)
-        #before_lower_case_example = cleaned_country_names_codes_null_duplicates_dob_jd_text_df.iloc[0]['first_name']
+        # DEBUGGING: get an example from before the conversion so I can check if it works (can be any index as they all need converting)
+        #before_lower_case_example = self.df.iloc[0]['first_name']
         #print('this is the name before transformation:', before_lower_case_example)
 
         #convert first_name and last_name  
-        cleaned_country_names_codes_null_duplicates_dob_jd_text_df['first_name'] = cleaned_country_names_codes_null_duplicates_dob_jd_text_df['first_name'].str.lower()
-        cleaned_country_names_codes_null_duplicates_dob_jd_text_df['last_name'] = cleaned_country_names_codes_null_duplicates_dob_jd_text_df['last_name'].str.lower()
+        self.df['first_name'] = self.df['first_name'].str.lower()
+        self.df['last_name'] = self.df['last_name'].str.lower()
 
-        # log that it's worked 
-        #after_lower_case_example = cleaned_country_names_codes_null_duplicates_dob_jd_text_df.iloc[0]['first_name']
+        # DEBUGGING: log that it's worked 
+        #after_lower_case_example = self.df.iloc[0]['first_name']
         #print('this is the name after transformation:', after_lower_case_example)
 
         # strip whitespace from first_name and last_name fields
-        cleaned_country_names_codes_null_duplicates_dob_jd_text_df['first_name'] = cleaned_country_names_codes_null_duplicates_dob_jd_text_df['first_name'].str.strip()
-        cleaned_country_names_codes_null_duplicates_dob_jd_text_df['last_name'] = cleaned_country_names_codes_null_duplicates_dob_jd_text_df['last_name'].str.strip()
+        self.df['first_name'] = self.df['first_name'].str.strip()
+        self.df['last_name'] = self.df['last_name'].str.strip()
 
-        #log that the method has run 
-        print('clean_text_fields method has run... \n')
-
-        cleaned_user_details_df = cleaned_country_names_codes_null_duplicates_dob_jd_text_df
         # return the cleaned df 
-        return cleaned_user_details_df
+        return self
+
+
+    def clean_legacy_users_data(self): 
+        """
+        This method calls all the data cleaning methods on the 'legacy_users' data   
+        
+        Args: 
+            None 
+
+        Returns: 
+            dataframe: A cleaned dataframe of the legacy users data
+        
+        """
+        
+        return (self
+                .clean_country_names()
+                .clean_country_codes()
+                .drop_null_values_and_duplicates()
+                .clean_dob()
+                .clean_join_date()
+                .cleaning_text_fields()
+                .df)
+
 
     def clean_card_data(self):  
         
+        """
+        This method retrieves a table from a pdf using the DataExtractor method 'retrieve_pdf_data', 
+        It then cleans the 'expiry_date' column by removing incorrect values and converting it to datetime. 
+        It then removes incorrect card providers from the 'card_provider' column, resets the index 
+
+        Args: 
+            None 
+
+        Returns: 
+            dataframe: A dataframe with cleaned 'expiry_date' and 'card_provider' columns
+        """
+
     # gettting the card data to clean 
 
+        # LOGGING 
         print('Started clean_card_data method. Running retrieve_pdf_data to get the data')
+        
         # Create an instance of DataExtractor
         instance = DataExtractor()
 
@@ -234,9 +264,11 @@ class DataCleaning:
         #log starting of method
         #self.logger.info(f"Running retrieve_pdf_data with pdf_path: {pdf_path}")
         
-
     #cleaning expiry date column 
+        
+        # LOGGING 
         print('started cleaning expiry date column')
+        
         # Define a regular expression pattern for the MM/YY format
         pattern = r'^\d{2}/\d{2}$'
 
@@ -248,12 +280,15 @@ class DataCleaning:
 
     #adding datetime version of expiry date for calculations 
 
+        # LOGGING 
         print('started datetime conversion for expiry_date')
 
+        #add a column 'datetime_expiry_date' to the dateframe which is filled with 'expiry_date' converted to datetime 
         df['datetime_expiry_date'] = pd.to_datetime(df['expiry_date'], format='%m/%y', errors='coerce')
 
     # removing incorrect values from the card providers column 
         
+        # LOGGING 
         print('started removing incorrect values from card providers column')
 
         #create a valid providers list  
@@ -265,11 +300,28 @@ class DataCleaning:
         #Reset the index of the filtered DataFrame
         df = df.reset_index(drop=True)
 
-        cleaned_card_details_df = df 
-        return cleaned_card_details_df
+        return df
 
     def cleaning_store_details(self):
+
+        """
+        This method retrieves the stores date using the DataExtractor method 'retrieve_store_data' 
+        It drops rows with NA and the column 'longitude' 
+        It then filters out items in the column 'locality' that aren't real place names or NULL
+        It then replaces incorrect spellings in the 'continent' column  
+        It then converts 'opening_date' to a datetime object 
         
+        Args: 
+            None 
+
+        Returns: 
+            dataframe: A dataframe with cleaned 'longitude', 'locality', 'continent' and'opening_date' columns 
+
+        """
+
+        # LOGGING 
+        print('Started cleaning_store_details')
+
         #creating instance of dataextractor 
         instance = DataExtractor()
         
@@ -294,18 +346,22 @@ class DataCleaning:
 
         df['continent'] = df['continent'].replace(continent_replacements)
         
-        #checking everything has worked 
-        print(df['continent'].unique())
-        print(df['store_type'].unique()) 
-        print(df['country_code'].unique()) 
-        print(df['continent'].unique())
+        # LOGGING: checking everything has worked 
+        #print(df['continent'].unique())
+        #print(df['store_type'].unique()) 
+        #print(df['country_code'].unique()) 
+        #print(df['continent'].unique())
 
+        # LOGGING: checking of datetime before is datetime64 datetype  
+        #is_datetime_before = pd.api.types.is_datetime64_any_dtype(df['opening_date'])
+        
         # converting opening date to datetime object 
-        is_datetime_before = pd.api.types.is_datetime64_any_dtype(df['opening_date'])
         df['opening_date'] = pd.to_datetime(df['opening_date'], format='%Y-%m-%d', errors='coerce')
-        is_datetime_after = pd.api.types.is_datetime64_any_dtype(df['opening_date'])
-        print(f"Is 'dates' column datetime64 dtype? {is_datetime_before}")
-        print(f"Is 'dates' column datetime64 dtype? {is_datetime_after}")
+        
+        # LOGGING: checking the conversion worked 
+        #is_datetime_after = pd.api.types.is_datetime64_any_dtype(df['opening_date'])
+        #print(f"Is 'dates' column datetime64 dtype? {is_datetime_before}")
+        #print(f"Is 'dates' column datetime64 dtype? {is_datetime_after}")
 
         #returning the dataframe 
         return df 
@@ -313,6 +369,22 @@ class DataCleaning:
 
     def convert_weights_to_kg(self):
         
+        """
+        This method retrieves the stores date using the DataExtractor method 'retrieve_store_data' 
+        It retrieves the data from the stores API, 
+        then creates a new column in the df 'weight_in_kg' and fills it with the weights from the 'weight' column converted to kg 
+        
+        Args: 
+            None 
+
+        Returns: 
+            dataframe: A dataframe with the new 'weight_in_kg' column 
+
+        """
+
+        #LOGGING start of method 
+        print('started convert_weights_to_kg')
+
         #creating instance of dataextractor 
         instance = DataExtractor()
             
@@ -346,30 +418,72 @@ class DataCleaning:
         return df 
 
     def clean_orders_data(self):
+        
+        """
+        This method retrieves the 'orders_table' via the 'read_data_from_table' method from the DataExtractor 
+        It then drops column '1', 'first_name' and 'last_name'
+        
+        Args: 
+            None 
+
+        Returns: 
+            dataframe: A dataframe with column '1', 'first_name' and 'last_name' dropped  
+
+        """
+        
+        #LOGGING, the start of the method 
         print('started clean_orders_data')
+        
+        #creating instance of dataextractor
         instance = DataExtractor()
+        
+        # get the 'orders_table' data via the 'read_data_from_table' method, and assign it to df 
         df = instance.read_data_from_table('orders_table')
+        
+        # drop unwanted columns 
         df = df.drop('1', axis=1)
         df = df.drop('first_name', axis=1)
         df = df.drop('last_name', axis=1)
-        print('about to return df clean_orders_data')
-        print(df)
+        
+        # return the cleaned df 
         return df 
 
     def clean_date_events(self):
+        """
+        This method retrieves the 'date_events' from an S3 resource using the DataExtractor's class 'extract_from_s3' 
+        It then cleans the 'year' format 
+        
+        Args: 
+            None 
+
+        Returns: 
+            dataframe: A dataframe with the 'year' format cleaned 
+
+        """
+        
+        # LOGGING
+        print('started clean_data_events')
+
+        #creating instance of dataextractor
         instance = DataExtractor()
+        
+        # extract the 'date_events' data from the S3 resource 
         df = instance.extract_from_s3('https://data-handling-public.s3.eu-west-1.amazonaws.com/date_details.json')
+        
+        # define the regex pattern for cleaning the year 
         year_regex = r'^\d{4}$'
+        
+        # apply the regex pattern to clean the year 
         df = df[df['year'].str.match(year_regex)]
+ 
+        # return the cleaned dataframe 
         return df 
 
 
 
-#START HERE FROM 3/7/24
-#sort out github issue about bieng out of sync and try a merge 
-# test the refactor of clean_country_names works and put it into the main code 
-# clean up the rest of data_cleaning 
-#add api key yaml to the ignore list for github 
+
+#START HERE FROM 8/7/24
+# 
 
 # TESTING / CALLING CODE 
 
@@ -380,83 +494,8 @@ datacleaning_instance = DataCleaning()
 databaseconnector_instance = DatabaseConnector() 
 
 # fetching and cleaning country nams 
-datacleaning_instance.clean_country_codes() 
+#datacleaning_instance.clean_date_events() 
 
-# cleaning the text fields in the legacy users table 
-#cleaned_user_details_df = datacleaning_instance.cleaning_text_fields() 
-
-#cleaning the card data from the PDF link 
-#cleaned_card_details_df = datacleaning_instance.clean_card_data()
-
-#uploading the cleaned legacy users table to the SQL database 
-#databaseconnector_instance.upload_to_db(cleaned_user_details_df, 'dim_users')
-
-#uploading the cleaned table from the PDF link to the SQL database 
-#databaseconnector_instance.upload_to_db(cleaned_card_details_df, 'dim_card_details')
-
-# fetching and cleanming the store data via the API 
-#cleaned_store_info_df = datacleaning_instance.cleaning_store_details()
-
-#uploading the cleaned store data from the API to the SQL database 
-#databaseconnector_instance.upload_to_db(cleaned_store_info_df, 'dim_store_details')
-
-#fetching and cleaning weight conversion on product details 
-#cleaned_product_details_df = datacleaning_instance.convert_weights_to_kg() 
-
-#uploading the cleaned product details from S3 to the SQL database 
-#databaseconnector_instance.upload_to_db(cleaned_product_details_df, 'dim_products')
-
-#fetching and cleaning order details  
-#cleaned_orders_df = datacleaning_instance.clean_orders_data()
-
-#uploading the cleaned order details to the SQL database 
-#databaseconnector_instance.upload_to_db(cleaned_orders_df, 'orders_table')
-
-#uploading the cleaned date events to the SQL database 
-#cleaned_date_events_df = datacleaning_instance.clean_date_events()
-
-#uploading the cleaned order details to the SQL database 
-#databaseconnector_instance.upload_to_db(cleaned_date_events_df, 'dim_date_times')
-
-
-"""
-import yaml
-
-with open('/Users/kk/Documents/ai_core/Data_engineering/multinational-retail-data-centralisation893/my_db_creds.yaml', 'r') as file_1:
-    creds_1 = yaml.safe_load(file_1)
-
-print(creds_1)  # Ensure this prints the updated credentials
-
-"""
-
-"""
-# code below is to test that it works 
-
-datacleaning_instance = DataCleaning() 
-
-datacleaning_instance.clean_card_data()
-
-"""
-
-"""
-# code below is to test that it works 
-
-datacleaning_instance = DataCleaning() 
-
-cleaned_df_all = datacleaning_instance.cleaning_text_fields() 
-
-data_utils_instance = DatabaseConnector() 
-
-data_utils_instance.upload_to_db(cleaned_df_all, 'dim_users')
-
-import yaml
-
-with open('/Users/kk/Documents/ai_core/Data_engineering/multinational-retail-data-centralisation893/my_db_creds.yaml', 'r') as file_1:
-    creds_1 = yaml.safe_load(file_1)
-
-print(creds_1)  # Ensure this prints the updated credentials
-
-"""
 
 
 """
