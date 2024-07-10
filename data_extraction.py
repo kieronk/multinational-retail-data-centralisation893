@@ -185,7 +185,7 @@ class DataExtractor:
         store_data_list = []
         
         # iterating through the list of stores and creating the specfic store endpoint using the number of the store  
-        for store_number in range (0, 3): #number of stores is 451 
+        for store_number in range (0, 451): #number of stores is 451 
             store_suffix = str(store_number) 
             store_info_endpoint = f'https://aqj7u5id95.execute-api.eu-west-1.amazonaws.com/prod/store_details/{store_suffix}'  
 

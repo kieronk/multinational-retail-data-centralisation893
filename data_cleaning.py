@@ -514,5 +514,4 @@ after_lower_case_example = lower_case_df.iloc[0]['first_name']
 print('again, this is the name before transformation:', before_lower_case_example)
 print('this is the name after transformation:', after_lower_case_example)
 
-
 """
