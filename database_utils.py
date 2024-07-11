@@ -116,34 +116,6 @@ class DatabaseConnector:
         # returns the engine so that it can be used by other methods 
         return engine 
 
-    def list_db_tables(self): 
-        
-        """
-        This method lists the tables in the database 
-        
-        Args: 
-            None 
-
-        Returns: 
-            list: a list of the table names in the database   
-        """
-        
-        # so I know that the method is working 
-        print('list_db_tables is working')
-        
-        #creates a engine to connect to the database by using the 'init_db_engine()' method  
-        engine = self.init_db_engine() 
-    
-        #creating an inspector object, which is like a librarian who looks up things in the library (i.e. database). I pass it the 'engine' as it needs a engine to 'power' and manage it's connection to the database 
-        inspector = inspect(engine) 
-
-        # getting the tables name using the get_table_names method of the inspector object from SQLAlchemy 
-        table_names = inspector.get_table_names()
-        
-        # returning the list of table names 
-        return table_names
-
-    
     def init_my_db_engine(self):   
         
         """
@@ -178,6 +150,33 @@ class DatabaseConnector:
         #return the engine for use with other functions 
         return engine 
 
+    def list_db_tables(self): 
+        
+        """
+        This method lists the tables in the database 
+        
+        Args: 
+            None 
+
+        Returns: 
+            list: a list of the table names in the database   
+        """
+        
+        # so I know that the method is working 
+        print('list_db_tables is working')
+        
+        #creates a engine to connect to the database by using the 'init_db_engine()' method  
+        engine = self.init_db_engine() 
+    
+        #creating an inspector object, which is like a librarian who looks up things in the library (i.e. database). I pass it the 'engine' as it needs a engine to 'power' and manage it's connection to the database 
+        inspector = inspect(engine) 
+
+        # getting the tables name using the get_table_names method of the inspector object from SQLAlchemy 
+        table_names = inspector.get_table_names()
+        
+        # returning the list of table names 
+        return table_names
+
     def upload_to_db(self, dataframe, table_name):
         
         """
@@ -207,9 +206,6 @@ class DatabaseConnector:
             print(f"Table '{table_name}' uploaded successfully.")
         except Exception as e:
             print(f"An error occurred while uploading the table: {e}")
-
-
-
 
 
 # test if code works   
