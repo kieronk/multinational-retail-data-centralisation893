@@ -92,7 +92,7 @@ class DatabaseConnector:
     def init_db_engine(self): 
         
         """
-        This method creates the engine to use with the db 
+        This method creates the engine to use with the RDS db 
         
         Args: 
             None 
@@ -133,6 +133,8 @@ class DatabaseConnector:
         
         # this gets my database credentials by using the read_db_creds 
         my_db_creds = self.read_my_db_creds()  
+        
+        #print('DEBUG these are the creds', my_db_creds) 
         
         #this makes a URL to connect to the database using the credentials 
         my_db_url = f"postgresql+psycopg2://{my_db_creds['USER']}:{my_db_creds['PASSWORD']}@{my_db_creds['HOST']}:{my_db_creds['PORT']}/{my_db_creds['DATABASE']}" 
@@ -210,9 +212,19 @@ class DatabaseConnector:
 
 # test if code works   
 #example = DatabaseConnector() 
+#example.init_my_db_engine() 
 #example.read_db_creds()
 #example.list_db_tables()
 #example.read_my_db_creds() 
 #example.read_api_key() 
 
+# Test for upload_to_db
+# data = {
+#     'card_number': [1, '2', 3, 4, '5678'],
+#     'other_column': [10, 20, 30, 40, 50]
+# }
 
+# df = pd.DataFrame(data)
+
+# example = DatabaseConnector() 
+# example.upload_to_db(df, 'test')

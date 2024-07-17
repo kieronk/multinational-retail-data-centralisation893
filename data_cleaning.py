@@ -482,10 +482,9 @@ class DataCleaning:
 
 
 
-#START HERE FROM 8/7/24
-# 
-
 # TESTING / CALLING CODE 
+
+#CREATING INSTANCES 
 
 # creating data cleaning instance needed for running the methods in this class 
 datacleaning_instance = DataCleaning() 
@@ -493,8 +492,77 @@ datacleaning_instance = DataCleaning()
 # creating database connector instance needed for running the methods in database_utils file  
 databaseconnector_instance = DatabaseConnector() 
 
-# fetching and cleaning country nams 
-#datacleaning_instance.clean_date_events() 
+# LEGACY USER DATA 
+
+# fetching and cleaning legacy users data 
+clean_legacy_users_df = datacleaning_instance.clean_legacy_users_data() 
+
+# uploading legacy users data to database, using 'upload_to_db method of DatabaseConnector class, and called the legacy users data 'dim_users' 
+databaseconnector_instance.upload_to_db(clean_legacy_users_df, 'dim_users')
+
+#CARD DATA 
+
+# fetching and cleaning card data 
+clean_card_data_df = datacleaning_instance.clean_card_data() 
+
+# uploading legacy users data to database, using 'upload_to_db method of DatabaseConnector class, and called the legacy users data 'dim_users' 
+databaseconnector_instance.upload_to_db(clean_card_data_df, 'dim_card_details')
+
+# STORE DETAILS 
+
+# fetching and cleaning card data 
+clean_store_data_df = datacleaning_instance.cleaning_store_details()
+
+# uploading legacy users data to database, using 'upload_to_db method of DatabaseConnector class, and called the legacy users data 'dim_users' 
+databaseconnector_instance.upload_to_db(clean_store_data_df, 'dim_store_details')
+
+# WEIGHT TO KG (CLEAN PRODUCTS TABLE)
+
+# fetching and cleaning card data 
+clean_weights_df = datacleaning_instance.convert_weights_to_kg()
+
+# uploading legacy users data to database, using 'upload_to_db method of DatabaseConnector class, and called the legacy users data 'dim_users' 
+databaseconnector_instance.upload_to_db(clean_weights_df, 'dim_products')
+
+# ORDERS TABLE  
+
+# fetching and cleaning card data 
+clean_orders_df = datacleaning_instance.clean_orders_data()
+
+# uploading legacy users data to database, using 'upload_to_db method of DatabaseConnector class, and called the legacy users data 'dim_users' 
+databaseconnector_instance.upload_to_db(clean_orders_df, 'orders_table')
+
+# DATE EVENTS  
+
+# fetching and cleaning card data 
+clean_date_events_df = datacleaning_instance.clean_date_events()
+
+# uploading legacy users data to database, using 'upload_to_db method of DatabaseConnector class, and called the legacy users data 'dim_users' 
+databaseconnector_instance.upload_to_db(clean_date_events_df, 'dim_date_times')
+
+
+
+
+
+
+
+
+
+#databaseconnector_instance.upload_to_db(cleaned_orders_df, 'orders_table')
+
+# ----
+
+# cleaning the text fields in the legacy users table 
+
+#databaseconnector_instance.upload_to_db(cleaned_orders_df, 'orders_table')
+
+#uploading the cleaned date events to the SQL database 
+#cleaned_date_events_df = datacleaning_instance.clean_date_events()
+
+#uploading the cleaned order details to the SQL database 
+#databaseconnector_instance.upload_to_db(cleaned_date_events_df, 'dim_date_times')
+#databaseconnector_instance.upload_to_db(cleaned_date_events_df, 'dim_date_times')
+
 
 
 

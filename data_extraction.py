@@ -30,7 +30,7 @@ class DataExtractor:
 
     def read_data_from_table(self, table_name):         
         """
-        This method gets the data from the table 
+        This method gets the data from a specific table in AWS RDS 
         
         Args: 
             table_name: the name of the table you're trying to get
@@ -78,7 +78,7 @@ class DataExtractor:
     def read_rds_table(self): 
         
         """
-        This method gets the table names from the database   
+        This method gets the table names from the RDS database   
         
         Args: 
             None
@@ -264,6 +264,10 @@ class DataExtractor:
 
 #instance = DataExtractor()
 
+#table = instance.read_rds_table() 
+
+#print(table)
+
 #instance.retrieve_stores_data() 
 
 #instance = DataExtractor()
@@ -288,9 +292,7 @@ class DataExtractor:
 #---- 
 # Read data from the 'legacy_users' table
 
-#table = instance.read_rds_table() 
 
-#print(table)
 
 #orders_data_df = instance.read_data_from_table('orders_table')
 
