@@ -162,7 +162,7 @@ class DataExtractor:
 
     def retrieve_stores_data(self):   
         """
-        This method gets the data about the stores from the database, it iterates through the nunmber of stores and on each iteration requests the data from the API. 
+        This method gets the data about the stores from the database, it iterates through the number of stores and on each iteration requests the data from the API. 
         It relies on getting the API key from the DatabaseConnector object  
         
         Args: 
@@ -172,37 +172,52 @@ class DataExtractor:
             dataframe: The store data is combined and returned in a dataframe  
         """
         
-        #so I know that the method is working 
         print('retrieve_stores_data is working')
-
+    
         # make an instance of the DatabaseConnector() object
         db_connector = DatabaseConnector() 
 
-        # get the api key via the read_api_key method 
+        # get the API key via the read_api_key method 
         headers = db_connector.read_api_key()
         
         # creating an empty list for the store details to go into 
         store_data_list = []
+        store_skipped_list = [] 
         
-        # iterating through the list of stores and creating the specfic store endpoint using the number of the store  
-        for store_number in range (0, 451): #number of stores is 451 
+        # iterating through the list of stores and creating the specific store endpoint using the number of the store  
+        for store_number in range (0, 451): # number of stores is 451 
             store_suffix = str(store_number) 
             store_info_endpoint = f'https://aqj7u5id95.execute-api.eu-west-1.amazonaws.com/prod/store_details/{store_suffix}'  
 
-            # trying to get the data from that endpoint and appending the json response to the list, with an except to catch errors 
-            try: 
-                with requests.get(store_info_endpoint, headers=headers) as response:
-                    response.raise_for_status()  # Check for HTTP errors
-                    store_data_list.append(response.json())
-            except requests.exceptions.RequestException as e:
-                print(f'An error occurred: {e}')
-                return None
-        
+            retry_count = 0
+            max_retries = 5
+            backoff_factor = 2
+
+            while retry_count < max_retries:
+                try: 
+                    with requests.get(store_info_endpoint, headers=headers) as response:
+                        response.raise_for_status()  # Check for HTTP errors
+                        store_data_list.append(response.json())
+                        break  # Exit the retry loop if the request is successful
+                except requests.exceptions.RequestException as e:
+                    if response.status_code == 429:  # Too Many Requests
+                        retry_count += 1
+                        wait_time = backoff_factor ** retry_count
+                        print(f'Rate limit exceeded for store {store_number}. Retrying in {wait_time} seconds...')
+                        time.sleep(wait_time)
+                    else:
+                        print(f'An error occurred for store {store_number}: {e}')
+                        store_skipped_list.append({"store_number": store_number, "error": str(e)})
+                        break  # Exit the loop for other types of errors
+
         # making a dataframe out of the list of store data 
-        df = pd.DataFrame(store_data_list) 
+        df_store = pd.DataFrame(store_data_list)
+        df_skipped = pd.DataFrame(store_skipped_list)
+        print("Skipped Stores DataFrame:")
+        print(df_skipped)
         
-        # returning that df 
-        return df 
+        # returning the store data dataframe 
+        return df_store
 
 
     def extract_from_s3(self, uri):
@@ -262,8 +277,13 @@ class DataExtractor:
 
 # START HERE code below is for testing purposes 
 
+
 #instance = DataExtractor()
 
+#x = instance.retrieve_stores_data() 
+
+#print(x)
+#print(x['latitude'].unique())
 #table = instance.read_rds_table() 
 
 #print(table)
@@ -275,7 +295,6 @@ class DataExtractor:
 
 #print(df)
 #instance.list_number_of_stores()
-#instance.retrieve_stores_data() 
 
 #example = instance.extract_from_s3('s3://data-handling-public/products.csv')
 #print(example)

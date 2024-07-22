@@ -85,6 +85,7 @@ class DatabaseConnector:
         
         headers = {'x-api-key': api_key}
         
+        print('read_api_key is done')
         # return the headers for use in other methods 
         return headers 
     

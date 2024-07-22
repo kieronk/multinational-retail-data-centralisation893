@@ -306,16 +306,17 @@ class DataCleaning:
 
         """
         This method retrieves the stores date using the DataExtractor method 'retrieve_store_data' 
-        It drops rows with NA and the column 'longitude' 
+        It convert latitiude to a number, then drops rows with missing data
+        It drops the 'lat' column 
         It then filters out items in the column 'locality' that aren't real place names or NULL
         It then replaces incorrect spellings in the 'continent' column  
-        It then converts 'opening_date' to a datetime object 
+        It then converts 'opening_date' to a datetime object and drops NaT 
         
         Args: 
             None 
 
         Returns: 
-            dataframe: A dataframe with cleaned 'longitude', 'locality', 'continent' and'opening_date' columns 
+            dataframe: A dataframe with cleaned 'longitude', 'latitude', 'locality', 'continent' and'opening_date' columns 
 
         """
 
@@ -328,10 +329,15 @@ class DataCleaning:
         #retrieving the data from the stores API
         df = instance.retrieve_stores_data()  
         
-        #dropping rows with NA and 'longitude' column as it's not useful without latitude  
-        df = df.dropna(axis=1)
-        df = df.drop(columns=['longitude'])
-        
+        print('before cleaning: ', df.info())
+
+        # Clean the latitude column
+        df['latitude'] = pd.to_numeric(df['latitude'], errors='coerce')
+        df = df.dropna(subset=['latitude'])
+
+        # Dropping the 'latitude' column as it's empty 
+        df = df.drop(columns=['lat'])
+    
         # filtering out items in locality that aren't real place names or NULL 
         pattern = r'^[a-zA-Z\s-]+$'
         df = df[df['locality'].str.match(pattern)]
@@ -358,11 +364,15 @@ class DataCleaning:
         # converting opening date to datetime object 
         df['opening_date'] = pd.to_datetime(df['opening_date'], format='%Y-%m-%d', errors='coerce')
         
+        # dropping any rows which contain missing values  
+        df = df.dropna(axis=0)
+
         # LOGGING: checking the conversion worked 
         #is_datetime_after = pd.api.types.is_datetime64_any_dtype(df['opening_date'])
         #print(f"Is 'dates' column datetime64 dtype? {is_datetime_before}")
         #print(f"Is 'dates' column datetime64 dtype? {is_datetime_after}")
 
+        print('after cleaning: ', df.info())
         #returning the dataframe 
         return df 
 
@@ -486,59 +496,62 @@ class DataCleaning:
 
 #CREATING INSTANCES 
 
-# creating data cleaning instance needed for running the methods in this class 
+# # creating data cleaning instance needed for running the methods in this class 
 datacleaning_instance = DataCleaning() 
 
-# creating database connector instance needed for running the methods in database_utils file  
+# # creating database connector instance needed for running the methods in database_utils file  
 databaseconnector_instance = DatabaseConnector() 
 
-# LEGACY USER DATA 
+# # LEGACY USER DATA 
 
-# fetching and cleaning legacy users data 
-clean_legacy_users_df = datacleaning_instance.clean_legacy_users_data() 
+# # fetching and cleaning legacy users data 
+# clean_legacy_users_df = datacleaning_instance.clean_legacy_users_data() 
 
-# uploading legacy users data to database, using 'upload_to_db method of DatabaseConnector class, and called the legacy users data 'dim_users' 
-databaseconnector_instance.upload_to_db(clean_legacy_users_df, 'dim_users')
+# # uploading legacy users data to database, using 'upload_to_db method of DatabaseConnector class, and called the legacy users data 'dim_users' 
+# databaseconnector_instance.upload_to_db(clean_legacy_users_df, 'dim_users')
 
-#CARD DATA 
+# #CARD DATA 
 
-# fetching and cleaning card data 
-clean_card_data_df = datacleaning_instance.clean_card_data() 
+# # fetching and cleaning card data 
+# clean_card_data_df = datacleaning_instance.clean_card_data() 
 
-# uploading legacy users data to database, using 'upload_to_db method of DatabaseConnector class, and called the legacy users data 'dim_users' 
-databaseconnector_instance.upload_to_db(clean_card_data_df, 'dim_card_details')
+# # uploading legacy users data to database, using 'upload_to_db method of DatabaseConnector class, and called the legacy users data 'dim_users' 
+# databaseconnector_instance.upload_to_db(clean_card_data_df, 'dim_card_details')
 
-# STORE DETAILS 
+# # STORE DETAILS 
 
-# fetching and cleaning card data 
-clean_store_data_df = datacleaning_instance.cleaning_store_details()
+# # fetching and cleaning card data 
+df = datacleaning_instance.cleaning_store_details()
+print(df.info())
+#print(df.head(5)) 
+#print(df['lat'].unique())  
 
-# uploading legacy users data to database, using 'upload_to_db method of DatabaseConnector class, and called the legacy users data 'dim_users' 
-databaseconnector_instance.upload_to_db(clean_store_data_df, 'dim_store_details')
+# # uploading store_details data to database, using 'upload_to_db method of DatabaseConnector class, and called the legacy users data 'dim_store_details' 
+#databaseconnector_instance.upload_to_db(clean_store_data_df, 'dim_store_details')
 
-# WEIGHT TO KG (CLEAN PRODUCTS TABLE)
+# # WEIGHT TO KG (CLEAN PRODUCTS TABLE)
 
-# fetching and cleaning card data 
-clean_weights_df = datacleaning_instance.convert_weights_to_kg()
+# # fetching and cleaning card data 
+# clean_weights_df = datacleaning_instance.convert_weights_to_kg()
 
-# uploading legacy users data to database, using 'upload_to_db method of DatabaseConnector class, and called the legacy users data 'dim_users' 
-databaseconnector_instance.upload_to_db(clean_weights_df, 'dim_products')
+# # uploading legacy users data to database, using 'upload_to_db method of DatabaseConnector class, and called the legacy users data 'dim_users' 
+# databaseconnector_instance.upload_to_db(clean_weights_df, 'dim_products')
 
-# ORDERS TABLE  
+# # ORDERS TABLE  
 
-# fetching and cleaning card data 
-clean_orders_df = datacleaning_instance.clean_orders_data()
+# # fetching and cleaning card data 
+# clean_orders_df = datacleaning_instance.clean_orders_data()
 
-# uploading legacy users data to database, using 'upload_to_db method of DatabaseConnector class, and called the legacy users data 'dim_users' 
-databaseconnector_instance.upload_to_db(clean_orders_df, 'orders_table')
+# # uploading legacy users data to database, using 'upload_to_db method of DatabaseConnector class, and called the legacy users data 'dim_users' 
+# databaseconnector_instance.upload_to_db(clean_orders_df, 'orders_table')
 
-# DATE EVENTS  
+# # DATE EVENTS  
 
-# fetching and cleaning card data 
-clean_date_events_df = datacleaning_instance.clean_date_events()
+# # fetching and cleaning card data 
+# clean_date_events_df = datacleaning_instance.clean_date_events()
 
-# uploading legacy users data to database, using 'upload_to_db method of DatabaseConnector class, and called the legacy users data 'dim_users' 
-databaseconnector_instance.upload_to_db(clean_date_events_df, 'dim_date_times')
+# # uploading legacy users data to database, using 'upload_to_db method of DatabaseConnector class, and called the legacy users data 'dim_users' 
+# databaseconnector_instance.upload_to_db(clean_date_events_df, 'dim_date_times')
 
 
 
@@ -566,8 +579,8 @@ databaseconnector_instance.upload_to_db(clean_date_events_df, 'dim_date_times')
 
 
 
-"""
-Code to clean addresses if needed 
+
+#Code to clean addresses if needed 
 
 #cleaning special characters and punctuation from addresses 
 #address_before_transformation = lower_case_df.iloc[0]['address']
@@ -578,8 +591,6 @@ Code to clean addresses if needed
 #print('this is address after transformation', address_after_transformation)
 
 #print before and after examples to check it worked 
-after_lower_case_example = lower_case_df.iloc[0]['first_name']
-print('again, this is the name before transformation:', before_lower_case_example)
-print('this is the name after transformation:', after_lower_case_example)
-
-"""
+#after_lower_case_example = lower_case_df.iloc[0]['first_name']
+#print('again, this is the name before transformation:', before_lower_case_example)
+#print('this is the name after transformation:', after_lower_case_example)
