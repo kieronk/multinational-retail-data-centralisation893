@@ -380,10 +380,9 @@ class DataCleaning:
     def convert_weights_to_kg(self):
         
         """
-        This method retrieves the stores date using the DataExtractor method 'retrieve_store_data' 
-        It retrieves the data from the stores API, 
-        then creates a new column in the df 'weight_in_kg' and fills it with the weights from the 'weight' column converted to kg 
-        
+        This method retrieves a CSV of products from s3 using the extract_from_s3 method of the DataExtractor class 
+        Then creates a new column in the df 'weight_in_kg' and fills it with the weights from the 'weight' column converted to kg 
+        It also removes any rows with missing data, and removes rows with incorrect data 
         Args: 
             None 
 
@@ -425,6 +424,15 @@ class DataCleaning:
         # Apply the conversion to the 'weights' column
         df['weight_in_kg'] = df['weight'].apply(convert_to_kg) # self.df['weight_in_kg'] = self.df['weights'].apply(convert_to_kg)
 
+        # dropping any rows which contain missing values 
+        df = df.dropna(axis=0)
+
+        # identifying and dropping incorrect values 
+        category_pattern = re.compile(r'^[a-zA-Z\-]+$')
+
+        # filters the data frame based on the result of the boolean, where only items matching the pattern are included 
+        df = df[df['category'].apply(lambda x: bool(category_pattern.match(x)))]
+   
         return df 
 
     def clean_orders_data(self):
@@ -520,30 +528,27 @@ databaseconnector_instance = DatabaseConnector()
 
 # # STORE DETAILS 
 
-# # fetching and cleaning card data 
-df = datacleaning_instance.cleaning_store_details()
-print(df.info())
-#print(df.head(5)) 
-#print(df['lat'].unique())  
+# fetching and cleaning card data 
+#clean_store_data_df = datacleaning_instance.cleaning_store_details()
 
-# # uploading store_details data to database, using 'upload_to_db method of DatabaseConnector class, and called the legacy users data 'dim_store_details' 
+# uploading store_details data to database, using 'upload_to_db method of DatabaseConnector class, and called the legacy users data 'dim_store_details' 
 #databaseconnector_instance.upload_to_db(clean_store_data_df, 'dim_store_details')
 
 # # WEIGHT TO KG (CLEAN PRODUCTS TABLE)
 
 # # fetching and cleaning card data 
-# clean_weights_df = datacleaning_instance.convert_weights_to_kg()
+clean_weights_df = datacleaning_instance.convert_weights_to_kg()
 
 # # uploading legacy users data to database, using 'upload_to_db method of DatabaseConnector class, and called the legacy users data 'dim_users' 
-# databaseconnector_instance.upload_to_db(clean_weights_df, 'dim_products')
+databaseconnector_instance.upload_to_db(clean_weights_df, 'dim_products')
 
 # # ORDERS TABLE  
 
 # # fetching and cleaning card data 
-# clean_orders_df = datacleaning_instance.clean_orders_data()
+#clean_orders_df = datacleaning_instance.clean_orders_data()
 
 # # uploading legacy users data to database, using 'upload_to_db method of DatabaseConnector class, and called the legacy users data 'dim_users' 
-# databaseconnector_instance.upload_to_db(clean_orders_df, 'orders_table')
+#databaseconnector_instance.upload_to_db(clean_orders_df, 'orders_table')
 
 # # DATE EVENTS  
 
