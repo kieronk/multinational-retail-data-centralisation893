@@ -241,13 +241,15 @@ class DataCleaning:
         """
         This method retrieves a table from a pdf using the DataExtractor method 'retrieve_pdf_data', 
         It then cleans the 'expiry_date' column by removing incorrect values and converting it to datetime. 
-        It then removes incorrect card providers from the 'card_provider' column, resets the index 
+        It then removes incorrect card providers from the 'card_provider' column,
+        It then removes any card numbers that aren't integers 
+        It then resets the index 
 
         Args: 
             None 
 
         Returns: 
-            dataframe: A dataframe with cleaned 'expiry_date' and 'card_provider' columns
+            dataframe: A dataframe with cleaned 'expiry_date', 'card_number' and 'card_provider' columns
         """
 
     # gettting the card data to clean 
@@ -270,10 +272,23 @@ class DataCleaning:
         print('started cleaning expiry date column')
         
         # Define a regular expression pattern for the MM/YY format
-        pattern = r'^\d{2}/\d{2}$'
+        pattern_exp = r'^\d{2}/\d{2}$'
 
         # Use str.match to filter rows where 'expiry_date' matches the pattern
-        df = df[df['expiry_date'].str.match(pattern)]
+        df = df[df['expiry_date'].str.match(pattern_exp)]
+
+        # Reset the index 
+        df = df.reset_index(drop=True)
+
+    # cleaning card details 
+        # LOGGING 
+        print('started card number cleaning')
+
+        # Define a regular expression pattern for numbers only
+        pattern_card = r'^\d+$'
+
+        # Use apply with a lambda function to filter rows where 'card_number' matches the pattern
+        df = df[df['card_number'].apply(lambda x: bool(re.match(pattern_card, str(x))))]
 
         # Reset the index 
         df = df.reset_index(drop=True)
@@ -299,6 +314,8 @@ class DataCleaning:
 
         #Reset the index of the filtered DataFrame
         df = df.reset_index(drop=True)
+
+    
 
         return df
 
