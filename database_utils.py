@@ -1,8 +1,9 @@
 import yaml
 import pandas as pd 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy import insert
 from sqlalchemy.inspection import inspect
+
 
 class DatabaseConnector: 
     """
@@ -181,35 +182,58 @@ class DatabaseConnector:
         return table_names
 
     def upload_to_db(self, dataframe, table_name):
-        
         """
         This method uploads dataframes to my database 
-        
+
         Args: 
-            dataframe: the dataframe to be uploads 
-            table_name: the name that you want given to table when it's uploaded 
+            dataframe: the dataframe to be uploaded 
+            table_name: the name that you want given to the table when it's uploaded 
 
         Returns: 
-            Prints a message to indicate whether the upload has been successful or raises and error if it hasn't  
+            Prints a message to indicate whether the upload has been successful or raises an error if it hasn't  
         """
-        
+
         # so I know that the method is working 
         print('upload_to_db is working')
 
         # run the init_my_db_engine method to get an engine for my database running 
         engine = self.init_my_db_engine() 
 
-        #try to write the dataframe to my sql database, and raise an exception if it fails 
-            # name = the name of the table where the df will written to
-            # con = the db connection object 
-            # if_exists = replace if exist already 
-            # index_false = don't write the df index as a seperate column in the SQL tabel 
         try:
-            dataframe.to_sql(name=table_name, con=engine, if_exists='replace', index=False) 
+            # Upload the dataframe to the database
+            dataframe.to_sql(name=table_name, con=engine, if_exists='replace', index=False)
             print(f"Table '{table_name}' uploaded successfully.")
+
         except Exception as e:
             print(f"An error occurred while uploading the table: {e}")
 
+    def drop_table(self, engine, table_name):
+        with engine.connect() as connection:
+            with connection.begin():
+                drop_sql = f"DROP TABLE IF EXISTS {table_name} CASCADE;"
+                connection.execute(text(drop_sql))
+                print(f"Table '{table_name}' dropped successfully.")
+    
+    def reset_database(self):
+        # Initialize the engine
+        engine = self.init_my_db_engine()
+
+        # Drop all tables
+        tables_to_drop = [
+            'orders_table',
+            'dim_products',
+            'dim_users',
+            'dim_store_details',
+            'dim_date_times',
+            'dim_card_details'
+        ]
+
+        for table in tables_to_drop:
+            self.drop_table(engine, table)
+
+# reset database code 
+#example = DatabaseConnector() 
+#example.reset_database() 
 
 # test if code works   
 #example = DatabaseConnector() 

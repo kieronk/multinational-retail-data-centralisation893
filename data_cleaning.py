@@ -237,13 +237,11 @@ class DataCleaning:
 
 
     def clean_card_data(self):  
-        
         """
         This method retrieves a table from a pdf using the DataExtractor method 'retrieve_pdf_data', 
         It then cleans the 'expiry_date' column by removing incorrect values and converting it to datetime. 
         It then removes incorrect card providers from the 'card_provider' column,
-        It then removes any card numbers that aren't integers 
-        It then resets the index 
+        It then removes any card numbers that aren't integers and resets the index again 
 
         Args: 
             None 
@@ -252,7 +250,7 @@ class DataCleaning:
             dataframe: A dataframe with cleaned 'expiry_date', 'card_number' and 'card_provider' columns
         """
 
-    # gettting the card data to clean 
+        # gettting the card data to clean 
 
         # LOGGING 
         print('Started clean_card_data method. Running retrieve_pdf_data to get the data')
@@ -266,10 +264,13 @@ class DataCleaning:
         #log starting of method
         #self.logger.info(f"Running retrieve_pdf_data with pdf_path: {pdf_path}")
         
-    #cleaning expiry date column 
+        #cleaning expiry date column 
         
         # LOGGING 
         print('started cleaning expiry date column')
+        
+        # Strip leading and trailing white spaces from the 'expiry_date' column
+        #df['expiry_date'] = df['expiry_date'].str.strip()
         
         # Define a regular expression pattern for the MM/YY format
         pattern_exp = r'^\d{2}/\d{2}$'
@@ -280,10 +281,13 @@ class DataCleaning:
         # Reset the index 
         df = df.reset_index(drop=True)
 
-    # cleaning card details 
+        # cleaning card details 
         # LOGGING 
         print('started card number cleaning')
 
+        # Strip leading and trailing white spaces from the 'card_number' column
+        #df['card_number'] = df['card_number'].str.strip()
+        
         # Define a regular expression pattern for numbers only
         pattern_card = r'^\d+$'
 
@@ -293,7 +297,7 @@ class DataCleaning:
         # Reset the index 
         df = df.reset_index(drop=True)
 
-    #adding datetime version of expiry date for calculations 
+        #adding datetime version of expiry date for calculations 
 
         # LOGGING 
         print('started datetime conversion for expiry_date')
@@ -301,7 +305,7 @@ class DataCleaning:
         #add a column 'datetime_expiry_date' to the dateframe which is filled with 'expiry_date' converted to datetime 
         df['datetime_expiry_date'] = pd.to_datetime(df['expiry_date'], format='%m/%y', errors='coerce')
 
-    # removing incorrect values from the card providers column 
+        # removing incorrect values from the card providers column 
         
         # LOGGING 
         print('started removing incorrect values from card providers column')
@@ -315,9 +319,8 @@ class DataCleaning:
         #Reset the index of the filtered DataFrame
         df = df.reset_index(drop=True)
 
-    
-
         return df
+
 
     def cleaning_store_details(self):
 
