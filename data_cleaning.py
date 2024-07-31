@@ -261,6 +261,10 @@ class DataCleaning:
         # Read data from the 'legacy_users' table
         df = instance.retrieve_pdf_data('https://data-handling-public.s3.eu-west-1.amazonaws.com/card_details.pdf')
 
+        # Number of rows
+        num_rows = df.shape[0]
+        print(f"Number of rows card data before cleaning: {num_rows}")
+        
         #log starting of method
         #self.logger.info(f"Running retrieve_pdf_data with pdf_path: {pdf_path}")
         
@@ -281,21 +285,29 @@ class DataCleaning:
         # Reset the index 
         df = df.reset_index(drop=True)
 
-        # cleaning card details 
-        # LOGGING 
-        print('started card number cleaning')
+        num_rows = df.shape[0]
+        print(f"Number of rows after cleaning expiry date: {num_rows}")
 
-        # Strip leading and trailing white spaces from the 'card_number' column
-        #df['card_number'] = df['card_number'].str.strip()
-        
+        # cleaning card details 
+
+        # logging number of rows 
+        num_rows = df.shape[0]
+        print(f"Number of rows before card number cleaning: {num_rows}")
+
         # Define a regular expression pattern for numbers only
         pattern_card = r'^\d+$'
+  
+        # Ensure all elements in the 'card_number' column are strings
+        df['card_number'] = df['card_number'].astype(str)
+
+        # Remove '??' from the strings in the 'card_number' column
+        df['card_number'] = df['card_number'].str.replace('?', '', regex=False)
 
         # Use apply with a lambda function to filter rows where 'card_number' matches the pattern
-        df = df[df['card_number'].apply(lambda x: bool(re.match(pattern_card, str(x))))]
+        df = df[df['card_number'].apply(lambda x: bool(re.match(pattern_card, x)))]
 
-        # Reset the index 
-        df = df.reset_index(drop=True)
+        num_rows = df.shape[0]
+        print(f"Number of rows after card number cleaning: {num_rows}")
 
         #adding datetime version of expiry date for calculations 
 
@@ -310,6 +322,9 @@ class DataCleaning:
         # LOGGING 
         print('started removing incorrect values from card providers column')
 
+        num_rows = df.shape[0]
+        print(f"Number of rows after expiry date to date time cleaning: {num_rows}")
+
         #create a valid providers list  
         valid_providers = ['Diners Club / Carte Blanche', 'American Express', 'JCB 16 digit','JCB 15 digit', 'Maestro', 'Mastercard', 'Discover','VISA 19 digit', 'VISA 16 digit', 'VISA 13 digit']
 
@@ -318,6 +333,9 @@ class DataCleaning:
 
         #Reset the index of the filtered DataFrame
         df = df.reset_index(drop=True)
+
+        num_rows = df.shape[0]
+        print(f"Number of rows after card provider cleaning: {num_rows}")
 
         return df
 
@@ -349,7 +367,8 @@ class DataCleaning:
         #retrieving the data from the stores API
         df = instance.retrieve_stores_data()  
         
-        print('before cleaning: ', df.info())
+        num_rows = df.shape[0]
+        print(f"Number of rows store data before cleaning: {num_rows}")
 
         # Clean the latitude column
         df['latitude'] = pd.to_numeric(df['latitude'], errors='coerce')
@@ -358,12 +377,18 @@ class DataCleaning:
         # Dropping the 'latitude' column as it's empty 
         df = df.drop(columns=['lat'])
     
+        num_rows = df.shape[0]
+        print(f"Number of rows store data after dropping lat and cleaning latitide column: {num_rows}")
+
         # filtering out items in locality that aren't real place names or NULL 
         pattern = r'^[a-zA-Z\s-]+$'
         df = df[df['locality'].str.match(pattern)]
         df['locality'] = df['locality'].replace('NULL', np.nan)
         df = df.dropna(subset=['locality'])
         
+        num_rows = df.shape[0]
+        print(f"Number of rows store data after cleaning locality: {num_rows}")
+
         # replacing incorrect spellings of continents 
         continent_replacements = {
             'eeEurope': 'Europe',
@@ -372,6 +397,9 @@ class DataCleaning:
 
         df['continent'] = df['continent'].replace(continent_replacements)
         
+        num_rows = df.shape[0]
+        print(f"Number of rows store data after cleaning continent: {num_rows}")
+
         # LOGGING: checking everything has worked 
         #print(df['continent'].unique())
         #print(df['store_type'].unique()) 
@@ -387,12 +415,16 @@ class DataCleaning:
         # dropping any rows which contain missing values  
         df = df.dropna(axis=0)
 
+        num_rows = df.shape[0]
+        print(f"Number of rows store data after cleaning opening date: {num_rows}")
+
         # LOGGING: checking the conversion worked 
         #is_datetime_after = pd.api.types.is_datetime64_any_dtype(df['opening_date'])
         #print(f"Is 'dates' column datetime64 dtype? {is_datetime_before}")
         #print(f"Is 'dates' column datetime64 dtype? {is_datetime_after}")
 
-        print('after cleaning: ', df.info())
+        num_rows = df.shape[0]
+        print(f"Number of rows store data after cleaning: {num_rows}")
         #returning the dataframe 
         return df 
 
@@ -420,6 +452,9 @@ class DataCleaning:
         #retrieving the data from the stores API
         df = instance.extract_from_s3('s3://data-handling-public/products.csv') 
                 
+        num_rows = df.shape[0]
+        print(f"Number of rows weight to kg before cleaning: {num_rows}")
+
         # Define the regex pattern to match numbers and letters
         pattern = re.compile(r'([0-9.]+)([a-zA-Z]+)')
 
@@ -453,6 +488,9 @@ class DataCleaning:
         # filters the data frame based on the result of the boolean, where only items matching the pattern are included 
         df = df[df['category'].apply(lambda x: bool(category_pattern.match(x)))]
    
+        num_rows = df.shape[0]
+        print(f"Number of rows weight to kg after cleaning: {num_rows}")
+
         return df 
 
     def clean_orders_data(self):
@@ -478,11 +516,17 @@ class DataCleaning:
         # get the 'orders_table' data via the 'read_data_from_table' method, and assign it to df 
         df = instance.read_data_from_table('orders_table')
         
+        num_rows = df.shape[0]
+        print(f"Number of rows orders data before cleaning: {num_rows}") 
+
         # drop unwanted columns 
         df = df.drop('1', axis=1)
         df = df.drop('first_name', axis=1)
         df = df.drop('last_name', axis=1)
         
+        num_rows = df.shape[0]
+        print(f"Number of rows orders data after cleaning: {num_rows}")
+
         # return the cleaned df 
         return df 
 
