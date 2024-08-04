@@ -271,11 +271,8 @@ class DataCleaning:
         #cleaning expiry date column 
         
         # LOGGING 
-        print('started cleaning expiry date column')
-        
-        # Strip leading and trailing white spaces from the 'expiry_date' column
-        #df['expiry_date'] = df['expiry_date'].str.strip()
-        
+        print('started cleaning expiry date column')        
+     
         # Define a regular expression pattern for the MM/YY format
         pattern_exp = r'^\d{2}/\d{2}$'
 
@@ -300,7 +297,7 @@ class DataCleaning:
         # Ensure all elements in the 'card_number' column are strings
         df['card_number'] = df['card_number'].astype(str)
 
-        # Remove '??' from the strings in the 'card_number' column
+        # Remove '?' from the strings in the 'card_number' column
         df['card_number'] = df['card_number'].str.replace('?', '', regex=False)
 
         # Use apply with a lambda function to filter rows where 'card_number' matches the pattern
@@ -370,24 +367,19 @@ class DataCleaning:
         num_rows = df.shape[0]
         print(f"Number of rows store data before cleaning: {num_rows}")
 
-        # Clean the latitude column
-        df['latitude'] = pd.to_numeric(df['latitude'], errors='coerce')
-        df = df.dropna(subset=['latitude'])
+        # remove garbage records and NULL from lat 
 
-        # Dropping the 'latitude' column as it's empty 
-        df = df.drop(columns=['lat'])
-    
-        num_rows = df.shape[0]
-        print(f"Number of rows store data after dropping lat and cleaning latitide column: {num_rows}")
+        # Define the regex pattern to match invalid latitude values
+        pattern = r'^[A-Za-z0-9]+$'
 
-        # filtering out items in locality that aren't real place names or NULL 
-        pattern = r'^[a-zA-Z\s-]+$'
-        df = df[df['locality'].str.match(pattern)]
-        df['locality'] = df['locality'].replace('NULL', np.nan)
-        df = df.dropna(subset=['locality'])
-        
+        # Create a boolean mask for rows to keep: rows that do not match the pattern and are not 'NULL' or 'N/A'
+        mask = ~df['lat'].str.contains(pattern, na=False) & ~df['lat'].isin(['NULL'])
+
+        # Filter the DataFrame using the mask
+        df = df[mask]
+
         num_rows = df.shape[0]
-        print(f"Number of rows store data after cleaning locality: {num_rows}")
+        print(f"Number of rows store data after dropping lat column: {num_rows}")
 
         # replacing incorrect spellings of continents 
         continent_replacements = {
@@ -396,36 +388,15 @@ class DataCleaning:
         }
 
         df['continent'] = df['continent'].replace(continent_replacements)
-        
+
         num_rows = df.shape[0]
         print(f"Number of rows store data after cleaning continent: {num_rows}")
 
-        # LOGGING: checking everything has worked 
-        #print(df['continent'].unique())
-        #print(df['store_type'].unique()) 
-        #print(df['country_code'].unique()) 
-        #print(df['continent'].unique())
-
-        # LOGGING: checking of datetime before is datetime64 datetype  
-        #is_datetime_before = pd.api.types.is_datetime64_any_dtype(df['opening_date'])
-        
-        # converting opening date to datetime object 
-        df['opening_date'] = pd.to_datetime(df['opening_date'], format='%Y-%m-%d', errors='coerce')
-        
-        # dropping any rows which contain missing values  
-        df = df.dropna(axis=0)
-
-        num_rows = df.shape[0]
-        print(f"Number of rows store data after cleaning opening date: {num_rows}")
-
-        # LOGGING: checking the conversion worked 
-        #is_datetime_after = pd.api.types.is_datetime64_any_dtype(df['opening_date'])
-        #print(f"Is 'dates' column datetime64 dtype? {is_datetime_before}")
-        #print(f"Is 'dates' column datetime64 dtype? {is_datetime_after}")
 
         num_rows = df.shape[0]
         print(f"Number of rows store data after cleaning: {num_rows}")
         #returning the dataframe 
+        
         return df 
 
 
@@ -552,12 +523,18 @@ class DataCleaning:
         # extract the 'date_events' data from the S3 resource 
         df = instance.extract_from_s3('https://data-handling-public.s3.eu-west-1.amazonaws.com/date_details.json')
         
+        num_rows = df.shape[0]
+        print(f"Number of rows date times before cleaning: {num_rows}")
+
         # define the regex pattern for cleaning the year 
         year_regex = r'^\d{4}$'
         
         # apply the regex pattern to clean the year 
         df = df[df['year'].str.match(year_regex)]
  
+        num_rows = df.shape[0]
+        print(f"Number of rows date times after cleaning: {num_rows}")
+
         # return the cleaned dataframe 
         return df 
 
@@ -600,10 +577,10 @@ databaseconnector_instance.upload_to_db(clean_store_data_df, 'dim_store_details'
 
 # # WEIGHT TO KG (CLEAN PRODUCTS TABLE)
 
-# # fetching and cleaning card data 
+# # fetching and cleaning weight data 
 clean_weights_df = datacleaning_instance.convert_weights_to_kg()
 
-# # uploading legacy users data to database, using 'upload_to_db method of DatabaseConnector class, and called the legacy users data 'dim_users' 
+# # uploading weight data to database, using 'upload_to_db method of DatabaseConnector class, and called the weight data 'dim_products' 
 databaseconnector_instance.upload_to_db(clean_weights_df, 'dim_products')
 
 # # ORDERS TABLE  
