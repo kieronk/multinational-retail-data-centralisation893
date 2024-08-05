@@ -6,6 +6,8 @@ from IPython.display import display
 from sqlalchemy import MetaData, Table
 from database_utils import DatabaseConnector
 from data_extraction import DataExtractor
+from unidecode import unidecode
+from dateutil import parser
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
@@ -23,60 +25,7 @@ class DataCleaning:
     def __init__ (self, df=None):
         self.df = df
         self.logger = logging.getLogger(self.__class__.__name__)
-       
-    def clean_country_names(self):  
-        
-        """
-        This method extracts and cleans the table of country names from the database using boolean indexing 
-        
-        Args: 
-            None 
-
-        Returns: 
-            dataframe: A dataframe of the cleaned country names 
-        """
-                    
-        #log starting of method
-        print('clean_country_names is working')
-
-        # Create an instance of DataExtractor so that I can use it's methods 
-        instance = DataExtractor()
-
-        # Read data from the 'legacy_users' table using the DataExtractor method 
-        self.df = instance.read_data_from_table('legacy_users')  
-        
-        # regex pattern for filtering out names that contain numbers, special characters (apart from '-')  
-        pattern = r'^[a-zA-Z\s-]+$'
-        
-        #filters the data frame on 2 boolean indexes: the regex boolean index and whether it contains 'NULL' 
-        self.df = self.df[self.df['country'].str.match(pattern)] # & (df['country'] != 'NULL')]
     
-        #return the cleaned dataframe 
-        return self
-
-
-    def clean_country_codes(self):
-        
-        """
-        This method replaces incorrect country codes 
-        
-        Args: 
-            None 
-
-        Returns: 
-            dataframe: A dataframe of the cleaned country names and codes 
-        """
-                    
-        #log starting of method
-        print('clean_country_codes is working')
-
-        # replace 'GGB' with 'GB' in the 'country_code' column of the cleaned_country_names_and_codes_df
-        self.df['country_code'] = self.df['country_code'].replace('GGB', 'GB')
-
-        #return the cleaned df 
-        return self
-
-
     def drop_null_values_and_duplicates(self): 
 
         """
@@ -93,92 +42,129 @@ class DataCleaning:
         #log starting of method
         print('drop_null_values_and_duplicates is working')
 
-        # filter the dataframe to exclude rows where both the country and country_code columns have the value 'NULL'
-        self.df = self.df[(self.df['country']!= 'NULL') | (self.df['country_code'] != 'NULL')]
+        # Create an instance of DataExtractor so that I can use it's methods 
+        instance = DataExtractor()
+
+        # Read data from the 'legacy_users' table using the DataExtractor method 
+        self.df = instance.read_data_from_table('legacy_users')  
+
+        num_rows = self.df.shape[0]
+        print(f"Number of rows at start: {num_rows}")
+
+        # Replace 'NULL' with np.nan
+        #log 
+        #null_rows = df.loc[df['country_code'] == 'NULL'] 
+        #display('before cleaning', null_rows)
+
+        # Drop rows with any NaN values
+        self.df.replace('NULL', np.nan, inplace=True)
+        self.df.dropna(inplace=True)
+
+        #log 
+        #null_rows = df.loc[df['country_code'] == 'NULL'] 
+        #display('after cleaning', null_rows)
+
+        #num_rows = df.shape[0]
+        #print(f"Number of rows after taking out null: {num_rows}")
+
+        # drop null values and dupes 
 
         # drop the duplicates from the dataframe directly ('in place')  
         self.df = self.df.drop_duplicates()
 
+        num_rows = self.df.shape[0]
+        print(f"Number of rows at end: {num_rows}")
+
         # return the cleaned df 
         return self
-
-    def clean_dob(self): #cleaning date_of_birth
+    
+    
+    def clean_country_codes(self):
         
         """
-        This method converts the 'date_of_birth' column to datetime format, 
-        then drops any invalid dates by dropping 'NaT' 
+        This method replaces incorrect country codes 
         
         Args: 
             None 
 
         Returns: 
-            dataframe: A dataframe with cleaned dob formatted as datetime 
+            dataframe: A dataframe of the cleaned country names and codes 
         """
-
+                    
         #log starting of method
-        print('clean_dob method is working')
+        print('clean_country_codes is working')
 
-        # DEBUGGING: get an example from before the conversion so I can check if it works (I know the row indexed by 360 would need converting)
-        #original_date_of_birth_example = cleaned_dob_df.iloc[360]['date_of_birth']
+        # STEP 2 clean country codes so I have something to base my filtering out of rubbish with 
 
-        # convert the 'date_of_birth' column to datetime, handling the different formats
-        self.df['date_of_birth'] = pd.to_datetime(self.df['date_of_birth'], errors='coerce', format='mixed')
+        # replace 'GGB' with 'GB' in the 'country_code' column of the cleaned_country_names_and_codes_df
+        self.df['country_code'] = self.df['country_code'].replace('GGB', 'GB')
 
-        # DEBUGGING: Check which dates could not be converted
-        #invalid_dates = cleaned_dob_df[cleaned_dob_df['date_of_birth'].isna()]
-        
-        # DEBUGGING: log the number of rows that couldn't be converted in case of errors  
-        #print('number of rows that convert to NaT', len(invalid_dates)) 
-
-        # DEBUGGING: log examples to check the conversion worked by printing an example of a difficult date
-        #date_of_birth_converted_example = cleaned_dob_df.iloc[360]['date_of_birth']
-        #print('the original date_of_birth before pd.to_datetime():\n', original_date_of_birth_example)
-        #print('date_of_birth after pd.to_datetime:\n', date_of_birth_converted_example)
-
-        # dropping rows with NaT values
-        self.df = self.df.dropna(subset=['date_of_birth'])
-
-        # return cleaned df 
+        #return the cleaned df 
         return self
 
-    def clean_join_date(self): #cleaning join_date 
+    def remove_garbage(self):
         
         """
-        This method converts the 'join_date' column to datetime format, 
-        then drops any invalid dates by dropping 'NaT' 
+        This method extracts and cleans the table of country names from the database using boolean indexing 
         
         Args: 
             None 
 
         Returns: 
-            dataframe: A dataframe with cleaned join date 
+            dataframe: A dataframe of the cleaned country names 
         """
-
+                    
         #log starting of method
-        print('clean_join_date is working')
-
-        #DEBUGGING: get an example from before the conversion so I can check if it works (I know the row indexed by 202 would need converting)
-        #original_join_date_example = self.df.iloc[202]['join_date']
-
-        # Convert the join_date column to datetime, handling various formats
-        self.df['join_date'] = pd.to_datetime(self.df['join_date'], errors='coerce', format='mixed') 
-
-        # DEBUGGING: Check which dates could not be converted
-        #invalid_dates = self.df[self.df['join_date'].isna()]
+        print('remove_garbage is working')
         
-        # DEBUGGING: log the number of rows that couldn't be converted in case of errors 
-        #print('number of rows that convert to NaT', len(invalid_dates)) 
+        # STEP 3 remove rows that are random letters and characters 
 
-        # DEBUGGING: Check the conversion worked by printing an example of a difficult date
-        #join_date_converted_example = self.df.iloc[202]['join_date']
-        #print('original join_date:\n', original_join_date_example)
-        #print('join_date after pd.to_datetime:\n', join_date_converted_example)
+        regex_country_code = '^[A-Z]{2}$'
 
-        # dropping rows with NaT values
-        self.df = self.df.dropna(subset=['join_date'])
+        dropped_rows = self.df.loc[~self.df['country_code'].str.match(regex_country_code)] 
+        display('before cleaning', dropped_rows)
+
+        self.df = self.df[self.df['country_code'].str.match(regex_country_code)] 
+
+        dropped_rows = self.df.loc[~self.df['country_code'].str.match(regex_country_code)] 
+        #display('before cleaning', null_rows)
+        display('after cleaning', dropped_rows)
 
         return self 
 
+
+    def clean_country_names(self):  
+        
+        """
+        This method extracts and cleans the table of country names from the database using boolean indexing 
+        
+        Args: 
+            None 
+
+        Returns: 
+            dataframe: A dataframe of the cleaned country names 
+        """
+                    
+        #log starting of method
+        print('clean_country_names is working')
+        
+        # STEP 4 clean country names
+        # regex pattern for filtering out names that contain numbers, special characters (apart from '-')  
+
+        num_rows = self.df.shape[0]
+        print(f"Number of rows before country cleaning: {num_rows}")
+
+        pattern = r'^[a-zA-Z\s-]+$'
+
+        #filters the data frame on 2 boolean indexes: the regex boolean index and whether it contains 'NULL' 
+        self.df = self.df[self.df['country'].str.match(pattern)] # & (df['country'] != 'NULL')]
+            
+        num_rows = self.df.shape[0]
+        print(f"Number of rows after country cleaning: {num_rows}")
+    
+        #return the cleaned dataframe 
+        return self
+ 
 
     def cleaning_text_fields(self):   
         """
@@ -194,9 +180,10 @@ class DataCleaning:
         #log starting of method
         print('clean_text_fields is working')
 
-        # DEBUGGING: get an example from before the conversion so I can check if it works (can be any index as they all need converting)
-        #before_lower_case_example = self.df.iloc[0]['first_name']
-        #print('this is the name before transformation:', before_lower_case_example)
+        # STEP 5 clean first and last names 
+        num_rows = self.df.shape[0]
+        print(f"Number of rows before name cleaning: {num_rows}")
+
 
         #convert first_name and last_name  
         self.df['first_name'] = self.df['first_name'].str.lower()
@@ -210,7 +197,110 @@ class DataCleaning:
         self.df['first_name'] = self.df['first_name'].str.strip()
         self.df['last_name'] = self.df['last_name'].str.strip()
 
+        # Remove special characters using unidecode
+        self.df['first_name'] = self.df['first_name'].apply(unidecode)
+        self.df['last_name'] = self.df['last_name'].apply(unidecode)
+
+        regex_pattern = r'^[A-Za-z ._\'-]+$'
+
+        not_applied = self.df[~self.df['first_name'].str.match(regex_pattern, na=False)]
+
+        if not not_applied.empty:
+            print("Names not matching the pattern:")
+            print(not_applied)
+        else:
+            print("All names match the pattern.")
+
+        num_rows = self.df.shape[0]
+        print(f"Number of rows after name cleaning: {num_rows}")
+
         # return the cleaned df 
+        return self
+
+
+    def clean_dob_and_join_date(self): #cleaning date_of_birth
+        
+        """
+        This method converts the 'date_of_birth' column to datetime format, 
+        then drops any invalid dates by dropping 'NaT' 
+        
+        Args: 
+            None 
+
+        Returns: 
+            dataframe: A dataframe with cleaned dob formatted as datetime 
+        """
+
+        #log starting of method
+        print('clean_dob method is working')
+
+        num_rows = self.df.shape[0]
+        print(f"Number of rows before dob cleaning: {num_rows}")
+
+
+        # Initialize a list to store invalid dates
+        invalid_dates_list = []
+
+        # Function to parse dates and standardize format
+        def parse_date(date_str):
+            try:
+                # Attempt to parse the date string to a datetime object
+                dt = parser.parse(date_str)
+                # Convert to the desired format (YYYY-MM-DD)
+                return dt.strftime('%Y-%m-%d')
+            except (parser.ParserError, ValueError):
+                # Append invalid date to the list
+                invalid_dates_list.append(date_str)
+                return np.nan  # Return NaN for invalid dates
+
+        # Apply the function to the 'date_of_birth' column
+        self.df['date_of_birth'] = self.df['date_of_birth'].apply(parse_date)
+
+        # Identify rows that would be null after conversion
+        invalid_rows = self.df[self.df['date_of_birth'].isna()]
+
+        display("Rows that would be converted to NULL:")
+        display(invalid_rows)
+
+        # Drop rows with NaN (invalid dates)
+        self.df = self.df.dropna(subset=['date_of_birth'])
+
+        display("\nList of invalid dates:")
+        display(invalid_dates_list)
+
+        num_rows = self.df.shape[0]
+        print(f"Number of rows after country cleaning: {num_rows}")
+
+        # STEP 7 clean join date 
+
+        num_rows = self.df.shape[0]
+        print(f"Number of rows before join date cleaning: {num_rows}")
+
+        # Initialize a list to store invalid dates
+        invalid_join_dates_list = []
+
+        # Apply the function to the 'date_of_birth' column
+        self.df['join_date'] = self.df['join_date'].apply(parse_date)
+
+        # Identify rows that would be null after conversion
+        invalid_join_rows = self.df[self.df['join_date'].isna()]
+
+        display("Rows that would be converted to NULL:")
+        display(invalid_join_rows)
+
+        # Drop rows with NaN (invalid dates)
+        self.df = self.df.dropna(subset=['join_date'])
+
+        display("\nList of invalid dates:")
+        display(invalid_join_dates_list)
+
+        num_rows = self.df.shape[0]
+        print(f"Number of rows after country cleaning: {num_rows}")
+
+        num_rows = self.df.shape[0]
+        print(f"Number of rows in legacy_users db: {num_rows}")
+
+        # return cleaned df 
         return self
 
 
@@ -227,12 +317,12 @@ class DataCleaning:
         """
         
         return (self
-                .clean_country_names()
-                .clean_country_codes()
                 .drop_null_values_and_duplicates()
-                .clean_dob()
-                .clean_join_date()
+                .clean_country_codes()
+                .remove_garbage() 
+                .clean_country_names()
                 .cleaning_text_fields()
+                .clean_dob_and_join_date()
                 .df)
 
 
@@ -367,19 +457,62 @@ class DataCleaning:
         num_rows = df.shape[0]
         print(f"Number of rows store data before cleaning: {num_rows}")
 
-        # remove garbage records and NULL from lat 
+        # STEP 1 make the webstore have prooper entries 
 
-        # Define the regex pattern to match invalid latitude values
+        # logging 
+        # before = df.iloc[0]
+        # display(before)
+
+        # Define the index of the record to update
+        index_to_update = 0
+
+        # Define the values to replace 'N/A' with for the specific record
+        df.loc[index_to_update, 'address'] = 'online'
+        df.loc[index_to_update, 'longitude'] = 1
+        df.loc[index_to_update, 'lat'] = 1
+        df.loc[index_to_update, 'locality'] = 'online'
+        df.loc[index_to_update, 'latitude'] = 1
+
+        # logging
+        # after = df.iloc[0]
+        # display(after)
+
+
+        # STEP 2 remove garbage records and NULL from lat 
+
+        # Define the regex pattern to match invalid lat values
         pattern = r'^[A-Za-z0-9]+$'
 
-        # Create a boolean mask for rows to keep: rows that do not match the pattern and are not 'NULL' or 'N/A'
+        # Create a boolean mask for rows to keep: rows that do not match the pattern and are not 'NULL'
         mask = ~df['lat'].str.contains(pattern, na=False) & ~df['lat'].isin(['NULL'])
+
+        display(df[~mask])
 
         # Filter the DataFrame using the mask
         df = df[mask]
 
         num_rows = df.shape[0]
         print(f"Number of rows store data after dropping lat column: {num_rows}")
+
+        #STEP 3 cleaning staff numbers
+
+        # Define the regex pattern to match digits only
+        pattern = r'^\d+$'
+
+        # Create a boolean mask for rows that are not digits
+        mask = ~df['staff_numbers'].str.match(pattern, na=False)
+
+        # Display the rows that will be converted to 0
+        print("Rows that will be converted to 0:")
+        display(df[mask])
+
+        # Convert non-digit values to 0
+        df.loc[mask, 'staff_numbers'] = 0
+
+        # Convert the staff_numbers column to integer
+        df['staff_numbers'] = df['staff_numbers'].astype(int)
+
+        # STEP 4, cleaning continents 
 
         # replacing incorrect spellings of continents 
         continent_replacements = {
@@ -392,10 +525,67 @@ class DataCleaning:
         num_rows = df.shape[0]
         print(f"Number of rows store data after cleaning continent: {num_rows}")
 
+        # STEP 5, cleaning locality 
+
+        # filtering out items in locality that aren't real place names or NULL 
+        pattern = r'^[a-zA-Z\s-]+$'
+        locality_mask = df['locality'].str.match(pattern, na=False) | (df.index == 0)
+
+        # Capture the rows that will be dropped
+        rows_dropped_by_locality = df[~locality_mask | df['locality'].replace('NULL', np.nan).isna()]
+        print("Rows that will be dropped during locality cleaning:")
+        print(rows_dropped_by_locality)
+
+        # Apply the locality mask
+        df = df[locality_mask]
+
+        # Replace 'NULL' with np.nan and drop rows where 'locality' is NaN
+        df['locality'] = df['locality'].replace('NULL', np.nan)
+        df = df.dropna(subset=['locality'])
+
+        num_rows = df.shape[0]
+        print(f"Number of rows store data after cleaning locality: {num_rows}")
+
+        # STEP 5, cleaning opening_date 
+
+        num_rows = df.shape[0]
+        print(f"Number of rows before opening_date cleaning: {num_rows}")
+
+        # Initialize a list to store invalid dates
+        invalid_dates_list = []
+
+        # Function to parse dates and standardize format
+        def parse_date(date_str):
+            try:
+                # Attempt to parse the date string to a datetime object
+                dt = parser.parse(date_str)
+                # Convert to the desired format (YYYY-MM-DD)
+                return dt.strftime('%Y-%m-%d')
+            except (parser.ParserError, ValueError):
+                # Append invalid date to the list
+                invalid_dates_list.append(date_str)
+                return np.nan  # Return NaN for invalid dates
+
+        # Apply the function to the 'date_of_birth' column
+        df['opening_date'] = df['opening_date'].apply(parse_date)
+
+        # Identify rows that would be null after conversion
+        invalid_rows = df[df['opening_date'].isna()]
+
+        display("Rows that would be converted to NULL:")
+        display(invalid_rows)
+
+        # Drop rows with NaN (invalid dates)
+        df_cleaned = df.dropna(subset=['opening_date'])
+
+        display("\nList of invalid dates:")
+        display(invalid_dates_list)
+
+        num_rows = df.shape[0]
+        print(f"Number of rows after opening_date cleaning: {num_rows}")
 
         num_rows = df.shape[0]
         print(f"Number of rows store data after cleaning: {num_rows}")
-        #returning the dataframe 
         
         return df 
 
@@ -422,12 +612,14 @@ class DataCleaning:
             
         #retrieving the data from the stores API
         df = instance.extract_from_s3('s3://data-handling-public/products.csv') 
-                
-        num_rows = df.shape[0]
-        print(f"Number of rows weight to kg before cleaning: {num_rows}")
 
+        num_rows = df.shape[0]
+        display(f"Number of rows before cleaning: {num_rows}")
         # Define the regex pattern to match numbers and letters
-        pattern = re.compile(r'([0-9.]+)([a-zA-Z]+)')
+        weight_pattern = re.compile(r'([0-9.]+)([a-zA-Z]+)')
+
+        # Define the regex pattern to match the weight multiplier format
+        weight_multiplier = re.compile(r'^(\d+)\s*x\s*(\d+)([a-zA-Z]+)$')
 
         # Conversion factors to kg
         conversion_factors = {
@@ -440,27 +632,126 @@ class DataCleaning:
         def convert_to_kg(weight):
             if pd.isna(weight):
                 return None  # Handle NaN values
-            match = pattern.match(str(weight))
-            if match:
-                number = float(match.group(1))  # Extract the numeric part
-                unit = match.group(2).lower()  # Extract the unit part
+            
+            match1 = weight_pattern.match(str(weight))
+            match2 = weight_multiplier.match(str(weight))
+            
+            if match1:
+                number = float(match1.group(1))  # Extract the numeric part
+                unit = match1.group(2).lower()  # Extract the unit part
                 return number * conversion_factors.get(unit, 0)  # Convert to kg
+            
+            elif match2:
+                multiplier = int(match2.group(1))  # Get the multiplier
+                amount = float(match2.group(2))  # Extract the amount
+                unit = match2.group(3).lower()  # Extract the unit
+                return (multiplier * amount) * conversion_factors.get(unit, 0)  # Convert to kg
+            
             return None  # Handle cases where regex does not match
-     
-        # Apply the conversion to the 'weights' column
-        df['weight_in_kg'] = df['weight'].apply(convert_to_kg) # self.df['weight_in_kg'] = self.df['weights'].apply(convert_to_kg)
 
-        # dropping any rows which contain missing values 
+        # Apply the conversion to the 'weight' column
+        df['weight_in_kg'] = df['weight'].apply(convert_to_kg)
+
+        num_rows = df.shape[0]
+        display(f"Number of rows after conversion: {num_rows}")
+
+        # Correct the misspelled value
+        #df['removed'] = df['removed'].replace('Still_avaliable', 'Still_available')
+        df['removed'] = df['removed'].str.replace('Still_avaliable', 'Still_available')
+
+        num_rows = df.shape[0]
+        display(f"Number of rows after replace still available: {num_rows}")
+
+        display(df['removed'].unique())
+
+        # Filter the DataFrame to keep only 'Still_available' or 'Removed'
+        # Correct the misspelled value using str.replace
+
+        # Define valid values
+        valid_values = ['Still_available', 'Removed']
+
+        # Identify rows that will be removed
+        rows_to_remove = df[~df['removed'].isin(valid_values)]
+
+        # Display the list of items that will be removed
+        print("Items to be removed:")
+        print(rows_to_remove)
+
+        # Filter the DataFrame to keep only 'Still_available' or 'Removed'
+        df = df[df['removed'].isin(valid_values)]
+
+
+        num_rows = df.shape[0]
+        display(f"Number of rows after cleaning of removed column: {num_rows}")
+
+
+        # Capture rows with NaN values before dropping them
+        rows_with_na = df[df.isna().any(axis=1)]
+        display("Rows with NaN values:")
+        display(rows_with_na)
+
+        # Drop rows with NaN values
         df = df.dropna(axis=0)
 
-        # identifying and dropping incorrect values 
+        num_rows = df.shape[0]
+        display(f"Number of rows after dropna: {num_rows}")
+
+        # Define the regex pattern for the 'category' column
         category_pattern = re.compile(r'^[a-zA-Z\-]+$')
 
-        # filters the data frame based on the result of the boolean, where only items matching the pattern are included 
-        df = df[df['category'].apply(lambda x: bool(category_pattern.match(x)))]
-   
+        # Capture rows that will be dropped by the category filter
+        rows_dropped_by_category = df[~df['category'].apply(lambda x: bool(category_pattern.match(str(x))))]
+
+        display("Rows that will be dropped by category filter:")
+        display(rows_dropped_by_category)
+
+        # Filter rows based on the category pattern
+        df = df[df['category'].apply(lambda x: bool(category_pattern.match(str(x))))]
+
         num_rows = df.shape[0]
-        print(f"Number of rows weight to kg after cleaning: {num_rows}")
+        display(f"Number of rows after category filter: {num_rows}")
+
+
+        # STEP 5, cleaning date_added 
+
+        num_rows = df.shape[0]
+        print(f"Number of rows before opening_date cleaning: {num_rows}")
+
+        # Initialize a list to store invalid dates
+        invalid_dates_list = []
+
+        # Function to parse dates and standardize format
+        def parse_date(date_str):
+            try:
+                # Attempt to parse the date string to a datetime object
+                dt = parser.parse(date_str)
+                # Convert to the desired format (YYYY-MM-DD)
+                return dt.strftime('%Y-%m-%d')
+            except (parser.ParserError, ValueError):
+                # Append invalid date to the list
+                invalid_dates_list.append(date_str)
+                return np.nan  # Return NaN for invalid dates
+
+        # Apply the function to the 'date_of_birth' column
+        df['date_added'] = df['date_added'].apply(parse_date)
+
+        # Identify rows that would be null after conversion
+        invalid_rows = df[df['date_added'].isna()]
+
+        display("Rows that would be converted to NULL:")
+        display(invalid_rows)
+
+        # Drop rows with NaN (invalid dates)
+        df_cleaned = df.dropna(subset=['date_added'])
+
+        display("\nList of invalid dates:")
+        display(invalid_dates_list)
+
+        num_rows = df.shape[0]
+        print(f"Number of rows after date_added cleaning: {num_rows}")
+
+        num_rows = df.shape[0]
+        print(f"Number of rows product data after cleaning: {num_rows}")
 
         return df 
 
@@ -551,6 +842,9 @@ datacleaning_instance = DataCleaning()
 # creating database connector instance needed for running the methods in database_utils file  
 databaseconnector_instance = DatabaseConnector() 
 
+# dropping data bases 
+databaseconnector_instance.reset_database() 
+ 
 # # LEGACY USER DATA 
 
 # fetching and cleaning legacy users data 

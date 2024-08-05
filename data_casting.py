@@ -210,6 +210,23 @@ def get_foreign_keys(connection, table_name):
     return foreign_keys
 
 
+# prints the rows that would be removed when try the cleaning functions
+def print_invalid_rows(connection, table_name, column_name, regex_pattern):
+    # Define the SQL to find rows that do not match the pattern
+    find_invalid_sql = f"""
+    SELECT "{column_name}"
+    FROM "{table_name}"
+    WHERE NOT (CAST("{column_name}" AS TEXT) ~ '{regex_pattern}');
+    """
+    
+    # Execute the query and fetch results
+    result = connection.execute(text(find_invalid_sql)).fetchall()
+    if result:
+        print(f"Rows in {table_name}.{column_name} to be set to NULL:")
+        for row in result:
+            print(row)
+
+
 # CLEANING FUNCTIONS: these functions all clean different types of data 
 
 # Create function to clean uuid with regex 
@@ -251,57 +268,89 @@ def clean_ean(connection, table_name, column_name):
 
 # Create function to clean expiry dates 
 def clean_exp_date(connection, table_name, column_name):
+    regex_pattern = '^\\d{2}/\\d{2}$'
+    
+    # Print invalid rows
+    print_invalid_rows(connection, table_name, column_name, regex_pattern)
+    
     clean_numbers_sql = f"""
     UPDATE {table_name}
     SET "{column_name}" = NULL
-    WHERE CAST("{column_name}" AS TEXT) !~ '^\\d{2}/\\d{2}$';
+    WHERE CAST("{column_name}" AS TEXT) !~ '{regex_pattern}';
     """
     connection.execute(text(clean_numbers_sql))
 
 # Create function to clean store codes  
 def clean_store_code(connection, table_name, column_name):
+    regex_pattern = '^[A-Za-z0-9]+-[A-Za-z0-9]+$'
+    
+    # Print invalid rows
+    print_invalid_rows(connection, table_name, column_name, regex_pattern)
+    
     clean_numbers_sql = f"""
     UPDATE "{table_name}"
     SET "{column_name}" = NULL
-    WHERE CAST("{column_name}" AS TEXT) !~ '^[A-Za-z0-9]+-[A-Za-z0-9]+$';
+    WHERE CAST("{column_name}" AS TEXT) !~ '{regex_pattern}';
     """
     connection.execute(text(clean_numbers_sql))
 
 # Create function to clean product codes 
 def clean_product_code(connection, table_name, column_name):
+    
+    # Define a regex pattern that allows letters, spaces, hyphens, and underscores
+    regex_pattern = '^[a-zA-Z0-9][a-zA-Z0-9]-[a-zA-Z0-9]+$'
+    
+    # Print invalid rows
+    print_invalid_rows(connection, table_name, column_name, regex_pattern)
+    
     clean_product_code_sql = f"""
     UPDATE "{table_name}"
     SET "{column_name}" = NULL
-    WHERE CAST("{column_name}" AS TEXT) !~ '^[a-zA-Z0-9][a-zA-Z0-9]-[a-zA-Z0-9]+$';
+    WHERE CAST("{column_name}" AS TEXT) !~ '{regex_pattern}';
     """
     connection.execute(text(clean_product_code_sql))
 
 # Create function to text data 
 def clean_text_data(connection, table_name, column_name):
+    
+    # Define a regex pattern that allows letters, spaces, hyphens, and underscores
+    regex_pattern = '^[A-Za-z\s-_]+$'
+    
+    # Print invalid rows
+    print_invalid_rows(connection, table_name, column_name, regex_pattern)
+    
     clean_text_sql = f"""
     UPDATE "{table_name}"
     SET "{column_name}" = NULL
-    WHERE CAST("{column_name}" AS TEXT) !~ '^[A-Za-z_]+$';
+    WHERE NOT (CAST("{column_name}" AS TEXT) ~ '{regex_pattern}');
     """
     connection.execute(text(clean_text_sql))
+# def clean_date_data(connection, table_name, column_name):
+#     regex_pattern = r'\(\d+, \d+, \d+, \d+, \d+\)'
+#     print_invalid_rows(connection, table_name, column_name, regex_pattern)
+#     clean_date_sql = f"""
+#     UPDATE {table_name}
+#     SET {column_name} = 
+#     TO_DATE(
+#         REGEXP_REPLACE(
+#             CAST({column_name} AS TEXT), 
+#             '\\((\\d+), (\\d+), (\\d+), \\d+, \\d+\\)', 
+#             '\\1-\\2-\\3'
+#         ), 
+#         'YYYY-MM-DD'
+#     )
+#     WHERE CAST({column_name} AS TEXT) ~ '{regex_pattern}';
+#     """
+#     connection.execute(text(clean_date_sql))
 
-# Create function to clean date data in the form of text 
+# this is updated but might not work 
 def clean_date_data(connection, table_name, column_name):
     clean_date_sql = f"""
     UPDATE {table_name}
-    SET {column_name} = 
-    TO_DATE(
-        REGEXP_REPLACE(
-            CAST({column_name} AS TEXT), 
-            '\\((\\d+), (\\d+), (\\d+), \\d+, \\d+\\)', 
-            '\\1-\\2-\\3'
-        ), 
-        'YYYY-MM-DD'
-    )
-    WHERE CAST({column_name} AS TEXT) ~ '\\(\\d+, \\d+, \\d+, \\d+, \\d+\\)';
+    SET {column_name} = TO_DATE({column_name}, 'YYYY-MM-DD')
+    WHERE {column_name} IS NOT NULL;
     """
     connection.execute(text(clean_date_sql))
-
 
 # CONVERTING FUNCTIONS: function to cast different datatypes 
 
@@ -517,239 +566,78 @@ def run_all_operations():
             #put the attempt to run the functions in a try block 
             try:
                 
-                # ORDERS TABLE 
-                
-                # Cleaning then converting the date_uuid
-                # clean_uuid(connection, 'orders_table', 'date_uuid')
-                # convert_to_uuid(connection, 'orders_table', 'date_uuid')
+                # ORDERS TABLE                 
                 text_uuid_to_uuid(connection, 'orders_table', 'date_uuid')
-                
-                # # Cleaning then converting the user_uuid
-                # clean_uuid(connection, 'orders_table', 'user_uuid')
-                # convert_to_uuid(connection, 'orders_table', 'user_uuid')
                 text_uuid_to_uuid(connection, 'orders_table', 'user_uuid')
-
-                # # Cleaning then converting the card_number
-                # clean_numbers(connection, 'orders_table', 'card_number')
-                # max_length = get_max_length(connection, 'orders_table', 'card_number')
-                # convert_to_varchar(connection, 'orders_table', 'card_number', max_length)
-                #num_to_varchar_any(connection, 'orders_table', 'card_number')
-                # just deleted 
-                # clean_card_number(connection, 'orders_table', 'card_number')
-                # max_length = get_max_length(connection, 'orders_table', 'card_number')
-                # convert_to_varchar(connection, 'orders_table', 'card_number', max_length)
                 card_num_to_varchar(connection,'orders_table', 'card_number')
-
-                # # Cleaning then converting store_code
-                # clean_store_or_product_codes(connection, 'orders_table', 'store_code')
-                # max_length = get_max_length(connection, 'orders_table', 'store_code')
-                # convert_to_varchar(connection, 'orders_table', 'store_code', max_length)
                 store_code_to_varchar(connection, 'orders_table', 'store_code')
-
-                # # Cleaning then converting product_code
-                # clean_store_or_product_codes(connection, 'orders_table', 'product_code')
-                # max_length = get_max_length(connection, 'orders_table', 'product_code')
-                # convert_to_varchar(connection, 'orders_table', 'product_code', max_length)
-                # #print('Convert product_code worked')
                 store_code_to_varchar(connection, 'orders_table', 'store_code')
-
-                # # Cleaning then converting the product_quantity
-                # clean_numbers(connection, 'orders_table', 'product_quantity')
-                # convert_to_smallint(connection, 'orders_table', 'product_quantity')
                 bigint_to_smallint(connection, 'orders_table', 'product_quantity')
 
                 # DIM USERS TABLE 
-                # # Cleaning then converting first_name
-                # clean_text_data(connection, 'dim_users', 'first_name')
-                # convert_to_varchar(connection, 'dim_users', 'first_name', 255)
                 text_to_varchar_255(connection, 'dim_users', 'first_name')
-
-                # # Cleaning then converting first_name
-                # clean_text_data(connection, 'dim_users', 'last_name')
-                # convert_to_varchar(connection, 'dim_users', 'last_name', 255)
                 text_to_varchar_255(connection, 'dim_users', 'last_name')
-
-                # # Cleaning then converting date_of_birth
-                # clean_date_data(connection, 'dim_users', 'date_of_birth')
-                # convert_to_date(connection, 'dim_users', 'date_of_birth')
                 text_date_to_date(connection, 'dim_users', 'date_of_birth')
-
-                # # Cleaning then converting country_code 
-                # clean_text_data(connection, 'dim_users', 'country_code')
-                # max_length = get_max_length(connection, 'dim_users', 'country_code')
-                # convert_to_varchar(connection, 'dim_users', 'country_code', max_length)
                 text_to_varchar_any(connection, 'dim_users', 'country_code')
-
-                # # Cleaning then converting the user_uuid
-                # clean_uuid(connection, 'dim_users', 'user_uuid')
-                # convert_to_uuid(connection, 'dim_users', 'user_uuid')
                 text_uuid_to_uuid(connection, 'dim_users', 'user_uuid')
-
-                # # Cleaning then converting date_of_birth
-                # clean_date_data(connection, 'dim_users', 'join_date')
-                # convert_to_date(connection, 'dim_users', 'join_date')
                 text_date_to_date(connection, 'dim_users', 'join_date')
 
                 # DIM_STORE_DETAILS
-
-                # # Cleaning then converting longitude
-                # clean_numbers(connection, 'dim_store_details', 'longitude')
-                # convert_to_float(connection, 'dim_store_details', 'longitude')
                 text_to_float(connection, 'dim_store_details', 'longitude')
-
-                # # Cleaning then converting locality 
-                # clean_text_data(connection, 'dim_store_details', 'locality')
-                # convert_to_varchar(connection, 'dim_store_details', 'locality', 255)
                 text_to_varchar_255(connection, 'dim_store_details', 'locality')            
-
-                # Cleaning then converting store_code 
-                # clean_store_or_product_codes(connection, 'dim_store_details', 'store_code')
-                # max_length = get_max_length(connection, 'dim_store_details', 'store_code')
-                # convert_to_varchar(connection, 'dim_store_details', 'store_code', max_length)
                 store_code_to_varchar(connection, 'dim_store_details', 'store_code')
-
-                # # Cleaning then converting staff_numbers
-                # clean_numbers(connection, 'dim_store_details', 'staff_numbers')
-                # convert_to_smallint(connection, 'dim_store_details', 'staff_numbers')
                 bigint_to_smallint(connection, 'dim_store_details', 'staff_numbers')
-
-                # # Cleaning then converting opening_date
-                # clean_date_data(connection, 'dim_store_details', 'opening_date')
-                # convert_to_date(connection, 'dim_store_details', 'opening_date')
                 text_date_to_date(connection, 'dim_store_details', 'opening_date')
-
-                # # Cleaning then converting locality 
-                # clean_text_data(connection, 'dim_store_details', 'store_type')
-                # convert_to_varchar(connection, 'dim_store_details', 'store_type', 255)
                 text_to_varchar_255(connection, 'dim_store_details', 'store_type') 
-
-                # # Cleaning then converting longitude
-                # clean_numbers(connection, 'dim_store_details', 'latitude')
-                # convert_to_float(connection, 'dim_store_details', 'latitude')
                 text_to_float(connection, 'dim_store_details', 'latitude')
-
-                # # Cleaning then converting country_code 
-                # clean_text_data(connection, 'dim_store_details', 'country_code')
-                # max_length = get_max_length(connection, 'dim_store_details', 'country_code')
-                # convert_to_varchar(connection, 'dim_store_details', 'country_code', max_length)
                 text_to_varchar_any(connection, 'dim_store_details', 'country_code')
-
-                # # Cleaning then converting continent 
-                # clean_text_data(connection, 'dim_store_details', 'continent')
-                # convert_to_varchar(connection, 'dim_store_details', 'continent', 255)
                 text_to_varchar_255(connection, 'dim_store_details', 'continent')
 
                 # DIM PRODUCTS 
-
-                # Removing pound from price column
                 remove_pound_symbol(connection, 'dim_products', 'product_price')
-                
-                # adding weight categories 
                 add_weight_categories(connection, 'dim_products', 'weight_in_kg', 'weight_category')
-
-                # # Cleaning product_price 
-                # clean_numbers(connection, 'dim_products', 'product_price')
-                # convert_to_float(connection, 'dim_products', 'product_price')
                 text_to_float(connection, 'dim_products', 'product_price')
-
-                # # Cleaning and converting weigth_in_kg
-                # clean_numbers(connection, 'dim_products', 'weight_in_kg')
-                # convert_to_float(connection, 'dim_products', 'weight_in_kg')
                 text_to_float(connection, 'dim_products', 'weight_in_kg')
-
-                # # Cleaning and converting EAN 
-                # clean_numbers(connection, 'dim_products', 'EAN')
-                
-                # convert_to_varchar(connection, 'dim_products', 'EAN', max_length)
-                #text_to_varchar_any(connection, 'dim_products', 'EAN')
-                # clean_ean(connection, 'dim_products', 'EAN')
-                # max_length = get_max_length(connection, 'dim_products', 'EAN')
-                # convert_to_varchar(connection, 'dim_products', 'EAN', max_length)
                 ean_to_varchar(connection, 'dim_products', 'EAN')
-
-                
-                # # Cleaning and converting product_code
-                # clean_store_or_product_codes(connection, 'dim_products', 'product_code')
-                # max_length = get_max_length(connection, 'dim_products', 'product_code')
-                # convert_to_varchar(connection, 'dim_products', 'product_code', max_length)
-                #text_to_varchar_any(connection, 'dim_products', 'product_code')
-                # clean_product_code(connection, 'dim_products', 'product_code')
-                # max_length = get_max_length(connection, 'dim_products', 'product_code')
-                # convert_to_varchar(connection, 'dim_products', 'product_code', max_length)
                 product_to_varchar(connection, 'dim_products', 'product_code')
-
-                # # Cleaning then converting date_added 
-                # clean_date_data(connection, 'dim_products', 'date_added')
-                # convert_to_date(connection, 'dim_products', 'date_added')
-                text_date_to_date(connection, 'dim_products', 'date_added')
-          
-                # # Cleaning then converting the uuid
-                # clean_uuid(connection, 'dim_products', 'uuid')
-                # convert_to_uuid(connection, 'dim_products', 'uuid')
+                text_date_to_date(connection, 'dim_products', 'date_added')          
                 text_uuid_to_uuid(connection, 'dim_products', 'uuid')
-
-                # # Cleaning then converting the removed column
-                # clean_text_data(connection, 'dim_products', 'removed')
-                # convert_to_boolean(connection, 'dim_products', 'removed', 'is_removed', 'Still_avaliable', 'Removed')
                 text_to_boolean(connection, 'dim_products', 'removed', 'is_removed', 'Still_avaliable', 'Removed')
 
                 # DIM DATE TIMES 
-
-                # # Cleaning then converting 'dim_date_times', 'day' 
                 num_to_varchar_any(connection, 'dim_date_times', 'day')
-
-                # # Cleaning then converting 'dim_date_times', 'year'
                 num_to_varchar_any(connection, 'dim_date_times', 'year')
-
-                # # Cleaning then converting 'dim_date_times', 'month' 
                 num_to_varchar_any(connection, 'dim_date_times', 'month')
-
-                # # Cleaning then converting 'dim_date_times', 'time_period' 
                 text_to_varchar_any(connection, 'dim_date_times', 'time_period')
-
-                # # Cleaning then converting 'dim_date_times', 'date_uuid' 
                 text_uuid_to_uuid(connection, 'dim_date_times', 'date_uuid')
 
-                # # Cleaning then converting 'dim_card_details', 'expiry_date'
+                # DIM CARD DETAILS 
                 exp_to_varchar_any(connection, 'dim_card_details', 'expiry_date')
-
-                # Cleaning then converting ''dim_card_details', 'card_number'
-                #num_to_varchar_any(connection, 'dim_card_details', 'card_number')
-                #clean_card_number(connection,  'dim_card_details', 'card_number')
-                #max_length = get_max_length(connection,  'dim_card_details', 'card_number')
-                #convert_to_varchar(connection,  'dim_card_details', 'card_number', max_length)
                 card_num_to_varchar(connection,'dim_card_details', 'card_number')
-                
-                # Cleaning then converting 'dim_card_details', 'date_payment_confirmed'
                 text_date_to_date(connection,'dim_card_details', 'date_payment_confirmed')
-
-                # adding primary keys dim tables
                 add_primary_key(connection, 'dim_card_details', 'card_number')
                 add_primary_key(connection, 'dim_date_times', 'date_uuid')
                 add_primary_key(connection, 'dim_products', 'product_code')
                 add_primary_key(connection, 'dim_store_details', 'store_code')
                 add_primary_key(connection, 'dim_users', 'user_uuid')
 
-                #adding foreign keys 
+                # adding foreign keys 
                 add_foreign_key(connection, 'orders_table', 'card_number', 'dim_card_details', 'card_number')
                 add_foreign_key(connection, 'orders_table', 'date_uuid', 'dim_date_times', 'date_uuid')
                 add_foreign_key(connection, 'orders_table', 'product_code', 'dim_products', 'product_code')
                 add_foreign_key(connection, 'orders_table', 'store_code', 'dim_store_details', 'store_code')
                 add_foreign_key(connection, 'orders_table', 'user_uuid', 'dim_users', 'user_uuid')
 
+                # view primary keys 
                 primary_keys = get_primary_keys(connection, 'orders_table')
                 print(f"Primary keys for table 'orders_table': {primary_keys}")
 
+                # view foreign keys
                 foreign_keys = get_foreign_keys(connection, 'orders_table')
                 print(f"Foreign keys for table 'orders_table': {foreign_keys}")
 
-
             except SQLAlchemyError as e:
                 print(f"An error occurred: {e}")
-
-            # Check and print column type after conversion
-            #column_type_after = check_column_type(connection, 'dim_store_details', 'store_type')
-            #print(f"Column type after conversion: {column_type_after}")
 
     print('End of call')
 
