@@ -210,16 +210,13 @@ def get_foreign_keys(connection, table_name):
     return foreign_keys
 
 
-# prints the rows that would be removed when try the cleaning functions
 def print_invalid_rows(connection, table_name, column_name, regex_pattern):
-    # Define the SQL to find rows that do not match the pattern
     find_invalid_sql = f"""
     SELECT "{column_name}"
     FROM "{table_name}"
     WHERE NOT (CAST("{column_name}" AS TEXT) ~ '{regex_pattern}');
     """
     
-    # Execute the query and fetch results
     result = connection.execute(text(find_invalid_sql)).fetchall()
     if result:
         print(f"Rows in {table_name}.{column_name} to be set to NULL:")
@@ -228,103 +225,87 @@ def print_invalid_rows(connection, table_name, column_name, regex_pattern):
 
 
 # CLEANING FUNCTIONS: these functions all clean different types of data 
-
-# Create function to clean uuid with regex 
-def clean_uuid(connection, table_name, column_name):
-    clean_uuid = f"""
-    UPDATE {table_name}
-    SET {column_name} = NULL
-    WHERE TRIM(CAST({column_name} AS TEXT)) !~* '^[a-f0-9]{{8}}-[a-f0-9]{{4}}-[a-f0-9]{{4}}-[a-f0-9]{{4}}-[a-f0-9]{{12}}$';
-    """  
-    # Convert the SQL string to a TextClause object and execute the query
-    connection.execute(text(clean_uuid))
-
-# Create function to clean numeric data (both integer and floats) data with regex by ensuring they are numbers 
-def clean_numbers(connection, table_name, column_name):
-    clean_numbers_sql = f"""
-    UPDATE "{table_name}"
-    SET "{column_name}" = NULL
-    WHERE CAST("{column_name}" AS TEXT) !~ '^[-]?[0-9]*\\.?[0-9]+$';
-    """
-    connection.execute(text(clean_numbers_sql))
-
-# Create function to clean card numbers 
-def clean_card_number(connection, table_name, column_name):
-    clean_card_number_sql = f"""
-    UPDATE "{table_name}"
-    SET "{column_name}" = NULL
-    WHERE CAST("{column_name}" AS TEXT) !~ '^[0-9]+$';
-    """
-    connection.execute(text(clean_card_number_sql))
-
-# Create function to clean EAN
-def clean_ean(connection, table_name, column_name):
-    clean_ean_sql = f"""
-    UPDATE "{table_name}"
-    SET "{column_name}" = NULL
-    WHERE CAST("{column_name}" AS TEXT) !~ '^[0-9]+$';
-    """
-    connection.execute(text(clean_ean_sql))
-
-# Create function to clean expiry dates 
-def clean_exp_date(connection, table_name, column_name):
-    regex_pattern = '^\\d{2}/\\d{2}$'
-    
-    # Print invalid rows
-    print_invalid_rows(connection, table_name, column_name, regex_pattern)
-    
-    clean_numbers_sql = f"""
-    UPDATE {table_name}
-    SET "{column_name}" = NULL
-    WHERE CAST("{column_name}" AS TEXT) !~ '{regex_pattern}';
-    """
-    connection.execute(text(clean_numbers_sql))
-
-# Create function to clean store codes  
-def clean_store_code(connection, table_name, column_name):
-    regex_pattern = '^[A-Za-z0-9]+-[A-Za-z0-9]+$'
-    
-    # Print invalid rows
-    print_invalid_rows(connection, table_name, column_name, regex_pattern)
-    
-    clean_numbers_sql = f"""
-    UPDATE "{table_name}"
-    SET "{column_name}" = NULL
-    WHERE CAST("{column_name}" AS TEXT) !~ '{regex_pattern}';
-    """
-    connection.execute(text(clean_numbers_sql))
-
-# Create function to clean product codes 
-def clean_product_code(connection, table_name, column_name):
-    
-    # Define a regex pattern that allows letters, spaces, hyphens, and underscores
-    regex_pattern = '^[a-zA-Z0-9][a-zA-Z0-9]-[a-zA-Z0-9]+$'
-    
-    # Print invalid rows
-    print_invalid_rows(connection, table_name, column_name, regex_pattern)
-    
-    clean_product_code_sql = f"""
-    UPDATE "{table_name}"
-    SET "{column_name}" = NULL
-    WHERE CAST("{column_name}" AS TEXT) !~ '{regex_pattern}';
-    """
-    connection.execute(text(clean_product_code_sql))
-
-# Create function to text data 
 def clean_text_data(connection, table_name, column_name):
-    
-    # Define a regex pattern that allows letters, spaces, hyphens, and underscores
-    regex_pattern = '^[A-Za-z\s-_]+$'
-    
-    # Print invalid rows
+    # Adjusted regex pattern: using space character and avoiding invalid range
+    regex_pattern = r"^[A-Za-z ._''-]+$"
     print_invalid_rows(connection, table_name, column_name, regex_pattern)
-    
     clean_text_sql = f"""
     UPDATE "{table_name}"
     SET "{column_name}" = NULL
     WHERE NOT (CAST("{column_name}" AS TEXT) ~ '{regex_pattern}');
     """
     connection.execute(text(clean_text_sql))
+
+def clean_numbers(connection, table_name, column_name):
+    regex_pattern = r'^[-]?[0-9]*\.?[0-9]+$'
+    print_invalid_rows(connection, table_name, column_name, regex_pattern)
+    clean_numbers_sql = f"""
+    UPDATE "{table_name}"
+    SET "{column_name}" = NULL
+    WHERE NOT (CAST("{column_name}" AS TEXT) ~ '{regex_pattern}');
+    """
+    connection.execute(text(clean_numbers_sql))
+
+def clean_card_number(connection, table_name, column_name):
+    regex_pattern = r'^[0-9]+$'
+    print_invalid_rows(connection, table_name, column_name, regex_pattern)
+    clean_card_number_sql = f"""
+    UPDATE "{table_name}"
+    SET "{column_name}" = NULL
+    WHERE NOT (CAST("{column_name}" AS TEXT) ~ '{regex_pattern}');
+    """
+    connection.execute(text(clean_card_number_sql))
+
+def clean_ean(connection, table_name, column_name):
+    regex_pattern = r'^[0-9]+$'
+    print_invalid_rows(connection, table_name, column_name, regex_pattern)
+    clean_ean_sql = f"""
+    UPDATE "{table_name}"
+    SET "{column_name}" = NULL
+    WHERE NOT (CAST("{column_name}" AS TEXT) ~ '{regex_pattern}');
+    """
+    connection.execute(text(clean_ean_sql))
+
+def clean_exp_date(connection, table_name, column_name):
+    regex_pattern = r'^\d{2}/\d{2}$'
+    print_invalid_rows(connection, table_name, column_name, regex_pattern)
+    clean_exp_date_sql = f"""
+    UPDATE {table_name}
+    SET "{column_name}" = NULL
+    WHERE NOT (CAST("{column_name}" AS TEXT) ~ '{regex_pattern}');
+    """
+    connection.execute(text(clean_exp_date_sql))
+
+def clean_store_code(connection, table_name, column_name):
+    regex_pattern = r'^[A-Za-z0-9]+-[A-Za-z0-9]+$'
+    print_invalid_rows(connection, table_name, column_name, regex_pattern)
+    clean_store_code_sql = f"""
+    UPDATE "{table_name}"
+    SET "{column_name}" = NULL
+    WHERE NOT (CAST("{column_name}" AS TEXT) ~ '{regex_pattern}');
+    """
+    connection.execute(text(clean_store_code_sql))
+
+def clean_product_code(connection, table_name, column_name):
+    regex_pattern = r'^[a-zA-Z0-9][a-zA-Z0-9]-[a-zA-Z0-9]+$'
+    print_invalid_rows(connection, table_name, column_name, regex_pattern)
+    clean_product_code_sql = f"""
+    UPDATE "{table_name}"
+    SET "{column_name}" = NULL
+    WHERE NOT (CAST("{column_name}" AS TEXT) ~ '{regex_pattern}');
+    """
+    connection.execute(text(clean_product_code_sql))
+
+def clean_uuid(connection, table_name, column_name):
+    regex_pattern = r'^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'
+    print_invalid_rows(connection, table_name, column_name, regex_pattern)
+    clean_uuid_sql = f"""
+    UPDATE {table_name}
+    SET {column_name} = NULL
+    WHERE TRIM(CAST({column_name} AS TEXT)) !~* '{regex_pattern}';
+    """  
+    connection.execute(text(clean_uuid_sql))
+
 # def clean_date_data(connection, table_name, column_name):
 #     regex_pattern = r'\(\d+, \d+, \d+, \d+, \d+\)'
 #     print_invalid_rows(connection, table_name, column_name, regex_pattern)
@@ -351,6 +332,7 @@ def clean_date_data(connection, table_name, column_name):
     WHERE {column_name} IS NOT NULL;
     """
     connection.execute(text(clean_date_sql))
+
 
 # CONVERTING FUNCTIONS: function to cast different datatypes 
 

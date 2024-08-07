@@ -350,62 +350,88 @@ class DataCleaning:
 
         # Read data from the 'legacy_users' table
         df = instance.retrieve_pdf_data('https://data-handling-public.s3.eu-west-1.amazonaws.com/card_details.pdf')
+        
+        # STEP 1: Cleaning expiry date column
+        print('started cleaning expiry date column')
 
-        # Number of rows
-        num_rows = df.shape[0]
-        print(f"Number of rows card data before cleaning: {num_rows}")
-        
-        #log starting of method
-        #self.logger.info(f"Running retrieve_pdf_data with pdf_path: {pdf_path}")
-        
-        #cleaning expiry date column 
-        
-        # LOGGING 
-        print('started cleaning expiry date column')        
-     
         # Define a regular expression pattern for the MM/YY format
         pattern_exp = r'^\d{2}/\d{2}$'
 
         # Use str.match to filter rows where 'expiry_date' matches the pattern
-        df = df[df['expiry_date'].str.match(pattern_exp)]
+        df = df[df['expiry_date'].str.match(pattern_exp)].reset_index(drop=True)
 
-        # Reset the index 
+        print('started datetime conversion for expiry_date')
+
+        # Convert expiry_date to datetime, coerce errors to NaT using .loc to avoid SettingWithCopyWarning
+        df.loc[:, 'datetime_expiry_date'] = pd.to_datetime(df['expiry_date'], format='%m/%y', errors='coerce')
+
+        # Identify rows that will be removed (rows with NaT in 'datetime_expiry_date')
+        removed_expiry_dates = df[df['datetime_expiry_date'].isna()]
+
+        print("Expiry date datetime conversion that will be removed:")
+        display(removed_expiry_dates)
+
+        # Reset the index
         df = df.reset_index(drop=True)
 
         num_rows = df.shape[0]
         print(f"Number of rows after cleaning expiry date: {num_rows}")
 
-        # cleaning card details 
-
-        # logging number of rows 
+        # STEP 2: Cleaning card number
         num_rows = df.shape[0]
         print(f"Number of rows before card number cleaning: {num_rows}")
 
         # Define a regular expression pattern for numbers only
         pattern_card = r'^\d+$'
-  
+   
         # Ensure all elements in the 'card_number' column are strings
         df['card_number'] = df['card_number'].astype(str)
 
-        # Remove '?' from the strings in the 'card_number' column
+        # Remove '??' from the strings in the 'card_number' column
         df['card_number'] = df['card_number'].str.replace('?', '', regex=False)
 
         # Use apply with a lambda function to filter rows where 'card_number' matches the pattern
-        df = df[df['card_number'].apply(lambda x: bool(re.match(pattern_card, x)))]
+        df = df[df['card_number'].apply(lambda x: bool(re.match(pattern_card, x)))].reset_index(drop=True)
+
+        # STEP 3: Cleaning date_payment_confirmed
+        num_rows = df.shape[0]
+        print(f"Number of rows before date_payment_confirmed cleaning: {num_rows}")
+
+        # Initialize a list to store invalid dates
+        invalid_dates_list = []
+
+        # Function to parse dates and standardize format
+        def parse_date(date_str):
+            try:
+                # Attempt to parse the date string to a datetime object
+                dt = parser.parse(date_str)
+                # Convert to the desired format (YYYY-MM-DD)
+                return dt.strftime('%Y-%m-%d')
+            except (parser.ParserError, ValueError):
+                # Append invalid date to the list
+                invalid_dates_list.append(date_str)
+                return np.nan  # Return NaN for invalid dates
+
+        # Apply the function to the 'date_payment_confirmed' column
+        df.loc[:, 'date_payment_confirmed'] = df['date_payment_confirmed'].apply(parse_date)
+
+        # Identify rows that would be null after conversion
+        invalid_rows = df[df['date_payment_confirmed'].isna()]
+
+        display("Rows that would be converted to NULL:")
+        display(invalid_rows)
+
+        # Drop rows with NaN (invalid dates)
+        df_cleaned = df.dropna(subset=['date_payment_confirmed'])
+
+        display("\nList of invalid dates:")
+        display(invalid_dates_list)
 
         num_rows = df.shape[0]
-        print(f"Number of rows after card number cleaning: {num_rows}")
+        print(f"Number of rows after date_payment_confirmed cleaning: {num_rows}")
 
-        #adding datetime version of expiry date for calculations 
+        # STEP 4: removing incorrect values from the card providers column 
 
-        # LOGGING 
-        print('started datetime conversion for expiry_date')
-
-        #add a column 'datetime_expiry_date' to the dateframe which is filled with 'expiry_date' converted to datetime 
-        df['datetime_expiry_date'] = pd.to_datetime(df['expiry_date'], format='%m/%y', errors='coerce')
-
-        # removing incorrect values from the card providers column 
-        
         # LOGGING 
         print('started removing incorrect values from card providers column')
 
@@ -418,11 +444,18 @@ class DataCleaning:
         # Filter the DataFrame to keep only rows with valid card providers
         df = df[df['card_provider'].isin(valid_providers)]
 
+        removed_providers = df[~df['card_provider'].isin(valid_providers)]
+        display("Card provider rows that will be removed:")
+        display(removed_expiry_dates)
+
         #Reset the index of the filtered DataFrame
         df = df.reset_index(drop=True)
 
         num_rows = df.shape[0]
         print(f"Number of rows after card provider cleaning: {num_rows}")
+
+        num_rows = df.shape[0]
+        print(f"Number of rows after card cleaning: {num_rows}")
 
         return df
 
