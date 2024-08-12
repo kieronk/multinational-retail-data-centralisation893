@@ -29,17 +29,16 @@ class DataCleaning:
     def drop_null_values_and_duplicates(self): 
 
         """
-        This method drops rows in the 'country' and 'country_code' columns with NULL values
-        Then it drops any duplicate rows 
+        This method retrieves the 'legacy_users' data and then drops rows with NULL values and any duplicate rows 
         
         Args: 
             None 
 
         Returns: 
-            dataframe: A dataframe of the cleaned country names and codes 
+            dataframe: A dataframe with NaN values and duplicates dropped 
         """
                     
-        #log starting of method
+        # LOGGING starting of method
         print('drop_null_values_and_duplicates is working')
 
         # Create an instance of DataExtractor so that I can use it's methods 
@@ -48,11 +47,11 @@ class DataCleaning:
         # Read data from the 'legacy_users' table using the DataExtractor method 
         self.df = instance.read_data_from_table('legacy_users')  
 
+        # LOGGING number of rows 
         num_rows = self.df.shape[0]
-        print(f"Number of rows at start: {num_rows}")
+        print(f"Number of rows at start of cleaning legacy users data: {num_rows}")
 
-        # Replace 'NULL' with np.nan
-        #log 
+        # LOGGING check null rows before cleaning  
         #null_rows = df.loc[df['country_code'] == 'NULL'] 
         #display('before cleaning', null_rows)
 
@@ -60,20 +59,20 @@ class DataCleaning:
         self.df.replace('NULL', np.nan, inplace=True)
         self.df.dropna(inplace=True)
 
-        #log 
+        # LOGGING check null rows after cleaning  
         #null_rows = df.loc[df['country_code'] == 'NULL'] 
         #display('after cleaning', null_rows)
 
+        # LOGGING print number of rows 
         #num_rows = df.shape[0]
         #print(f"Number of rows after taking out null: {num_rows}")
 
-        # drop null values and dupes 
-
-        # drop the duplicates from the dataframe directly ('in place')  
+        # Drop the duplicates from the dataframe directly ('in place')  
         self.df = self.df.drop_duplicates()
 
-        num_rows = self.df.shape[0]
-        print(f"Number of rows at end: {num_rows}")
+        # LOGGING print number of rows 
+        # num_rows = self.df.shape[0]
+        # print(f"Number of rows at end: {num_rows}")
 
         # return the cleaned df 
         return self
@@ -82,19 +81,17 @@ class DataCleaning:
     def clean_country_codes(self):
         
         """
-        This method replaces incorrect country codes 
+        This method replaces incorrect country codes with the correct country code 
         
         Args: 
             None 
 
         Returns: 
-            dataframe: A dataframe of the cleaned country names and codes 
+            dataframe: A dataframe with cleaned country codes 
         """
                     
-        #log starting of method
+        # LOGGING starting of method
         print('clean_country_codes is working')
-
-        # STEP 2 clean country codes so I have something to base my filtering out of rubbish with 
 
         # replace 'GGB' with 'GB' in the 'country_code' column of the cleaned_country_names_and_codes_df
         self.df['country_code'] = self.df['country_code'].replace('GGB', 'GB')
@@ -105,30 +102,30 @@ class DataCleaning:
     def remove_garbage(self):
         
         """
-        This method extracts and cleans the table of country names from the database using boolean indexing 
+        This method extracts and cleans the 'garbage' rows which are made up of random letters and numbers from the dataframe using boolean indexing 
         
         Args: 
             None 
 
         Returns: 
-            dataframe: A dataframe of the cleaned country names 
+            dataframe: A dataframe witn garbage rows removed  
         """
                     
-        #log starting of method
+        # LOGGING starting of method
         print('remove_garbage is working')
-        
-        # STEP 3 remove rows that are random letters and characters 
 
+        # Create the regex 
         regex_country_code = '^[A-Z]{2}$'
 
-        dropped_rows = self.df.loc[~self.df['country_code'].str.match(regex_country_code)] 
-        display('before cleaning', dropped_rows)
+        # LOGGING: Make a dataframe of the rows that will be dropped and print them  
+        # dropped_rows = self.df.loc[~self.df['country_code'].str.match(regex_country_code)] 
+        # display('before cleaning', dropped_rows)
 
         self.df = self.df[self.df['country_code'].str.match(regex_country_code)] 
 
-        dropped_rows = self.df.loc[~self.df['country_code'].str.match(regex_country_code)] 
-        #display('before cleaning', null_rows)
-        display('after cleaning', dropped_rows)
+        # LOGGING: Make a dataframe of the rows are left after the str.match to ensure they've all been cleaned 
+        # dropped_rows = self.df.loc[~self.df['country_code'].str.match(regex_country_code)] 
+        # display('after cleaning', dropped_rows)
 
         return self 
 
@@ -136,7 +133,7 @@ class DataCleaning:
     def clean_country_names(self):  
         
         """
-        This method extracts and cleans the table of country names from the database using boolean indexing 
+        This method extracts and cleans the table of country names from the database  
         
         Args: 
             None 
@@ -145,22 +142,22 @@ class DataCleaning:
             dataframe: A dataframe of the cleaned country names 
         """
                     
-        #log starting of method
+        # LOGGING starting of method
         print('clean_country_names is working')
         
-        # STEP 4 clean country names
-        # regex pattern for filtering out names that contain numbers, special characters (apart from '-')  
+        # LOGGING print number of rows 
+        # num_rows = self.df.shape[0]
+        # print(f"Number of rows before country cleaning: {num_rows}")
 
-        num_rows = self.df.shape[0]
-        print(f"Number of rows before country cleaning: {num_rows}")
-
+        # Create regex pattern for filtering out country names that contain numbers, special characters (apart from '-')  
         pattern = r'^[a-zA-Z\s-]+$'
 
-        #filters the data frame on 2 boolean indexes: the regex boolean index and whether it contains 'NULL' 
-        self.df = self.df[self.df['country'].str.match(pattern)] # & (df['country'] != 'NULL')]
-            
-        num_rows = self.df.shape[0]
-        print(f"Number of rows after country cleaning: {num_rows}")
+        # Filter the data frame to only contain items that match the regex  
+        self.df = self.df[self.df['country'].str.match(pattern)] 
+
+        # LOGGING print number of rows 
+        # num_rows = self.df.shape[0]
+        # print(f"Number of rows after country cleaning: {num_rows}")
     
         #return the cleaned dataframe 
         return self
@@ -168,7 +165,7 @@ class DataCleaning:
 
     def cleaning_text_fields(self):   
         """
-        This method clean the columns 'first_name' and 'last_name' by converting them to lower case and removing white spaces  
+        This method clean the columns 'first_name' and 'last_name' by making them lower case, stripping white space and removing special characters    
         
         Args: 
             None 
@@ -177,23 +174,23 @@ class DataCleaning:
             dataframe: A dataframe with cleaned 'first_name' and 'last_name' columns
         """
 
-        #log starting of method
+        # LOGGING: starting of method
         print('clean_text_fields is working')
 
-        # STEP 5 clean first and last names 
-        num_rows = self.df.shape[0]
-        print(f"Number of rows before name cleaning: {num_rows}")
+        # LOGGING print number of rows 
+        # num_rows = self.df.shape[0]
+        # print(f"Number of rows before name cleaning: {num_rows}")
 
 
-        #convert first_name and last_name  
+        #convert first_name and last_name to lower case 
         self.df['first_name'] = self.df['first_name'].str.lower()
         self.df['last_name'] = self.df['last_name'].str.lower()
 
-        # DEBUGGING: log that it's worked 
+        # LOGGING: log that it's worked 
         #after_lower_case_example = self.df.iloc[0]['first_name']
         #print('this is the name after transformation:', after_lower_case_example)
 
-        # strip whitespace from first_name and last_name fields
+        # Strip whitespace from first_name and last_name fields
         self.df['first_name'] = self.df['first_name'].str.strip()
         self.df['last_name'] = self.df['last_name'].str.strip()
 
@@ -201,27 +198,32 @@ class DataCleaning:
         self.df['first_name'] = self.df['first_name'].apply(unidecode)
         self.df['last_name'] = self.df['last_name'].apply(unidecode)
 
-        regex_pattern = r'^[A-Za-z ._\'-]+$'
+        # LOGGING: Check all remaining names match the pattern later used for casting the data 
+        # create regex pattern for checking the names match  
+        #regex_pattern = r'^[A-Za-z ._\'-]+$'
 
-        not_applied = self.df[~self.df['first_name'].str.match(regex_pattern, na=False)]
+        # LOGGING Create dataframe of the names the regex doesn't apply to 
+        #not_applied = self.df[~self.df['first_name'].str.match(regex_pattern, na=False)]
 
-        if not not_applied.empty:
-            print("Names not matching the pattern:")
-            print(not_applied)
-        else:
-            print("All names match the pattern.")
+        # LOGGING Print names the pattern doesn't apply to, or a message that all names match 
+        # if not not_applied.empty:
+        #     print("Names not matching the pattern:")
+        #     print(not_applied)
+        # else:
+        #     print("All names match the pattern.")
 
-        num_rows = self.df.shape[0]
-        print(f"Number of rows after name cleaning: {num_rows}")
+        # LOGGING print number of rows 
+        # num_rows = self.df.shape[0]
+        # print(f"Number of rows after name cleaning: {num_rows}")
 
         # return the cleaned df 
         return self
 
 
-    def clean_dob_and_join_date(self): #cleaning date_of_birth
+    def clean_dob_and_join_date(self):
         
         """
-        This method converts the 'date_of_birth' column to datetime format, 
+        This method cleans and converts the 'date_of_birth' and 'join_date' columns to datetime format, 
         then drops any invalid dates by dropping 'NaT' 
         
         Args: 
@@ -231,17 +233,15 @@ class DataCleaning:
             dataframe: A dataframe with cleaned dob formatted as datetime 
         """
 
-        #log starting of method
+        # LOGGING: starting of method
         print('clean_dob method is working')
 
-        num_rows = self.df.shape[0]
-        print(f"Number of rows before dob cleaning: {num_rows}")
-
+        # STEP 1: Define the converting function
 
         # Initialize a list to store invalid dates
         invalid_dates_list = []
 
-        # Function to parse dates and standardize format
+        # Define a function to parse dates and standardize format that can be applied to date_of_birth and join_date
         def parse_date(date_str):
             try:
                 # Attempt to parse the date string to a datetime object
@@ -253,31 +253,41 @@ class DataCleaning:
                 invalid_dates_list.append(date_str)
                 return np.nan  # Return NaN for invalid dates
 
+        # STEP 2: cleaning date_of_birth 
+
+        # # LOGGING print number of rows 
+        # num_rows = self.df.shape[0]
+        # print(f"Number of rows before dob cleaning: {num_rows}")
+
         # Apply the function to the 'date_of_birth' column
         self.df['date_of_birth'] = self.df['date_of_birth'].apply(parse_date)
 
         # Identify rows that would be null after conversion
         invalid_rows = self.df[self.df['date_of_birth'].isna()]
 
-        display("Rows that would be converted to NULL:")
-        display(invalid_rows)
+        # LOGGING: display the rows that would be converted to dull following the parse_date conversion 
+        # display("Rows that would be converted to NULL:")
+        # display(invalid_rows)
 
         # Drop rows with NaN (invalid dates)
         self.df = self.df.dropna(subset=['date_of_birth'])
 
-        display("\nList of invalid dates:")
-        display(invalid_dates_list)
+        # LOGGING show the list of dates that couldn't be converted by parse_data function 
+        # display("\nList of invalid dates:")
+        # display(invalid_dates_list)
 
-        num_rows = self.df.shape[0]
-        print(f"Number of rows after country cleaning: {num_rows}")
+        # LOGGING print number of rows 
+        # num_rows = self.df.shape[0]
+        # print(f"Number of rows after country cleaning: {num_rows}")
 
-        # STEP 7 clean join date 
+        # STEP 3: clean join date 
 
-        num_rows = self.df.shape[0]
-        print(f"Number of rows before join date cleaning: {num_rows}")
+        # LOGGING print number of rows 
+        # num_rows = self.df.shape[0]
+        # print(f"Number of rows before join date cleaning: {num_rows}")
 
         # Initialize a list to store invalid dates
-        invalid_join_dates_list = []
+        # invalid_join_dates_list = []
 
         # Apply the function to the 'date_of_birth' column
         self.df['join_date'] = self.df['join_date'].apply(parse_date)
@@ -285,20 +295,24 @@ class DataCleaning:
         # Identify rows that would be null after conversion
         invalid_join_rows = self.df[self.df['join_date'].isna()]
 
-        display("Rows that would be converted to NULL:")
-        display(invalid_join_rows)
+        # LOGGING display rows that would be converted to NULL 
+        # display("Rows that would be converted to NULL:")
+        # display(invalid_join_rows)
 
         # Drop rows with NaN (invalid dates)
         self.df = self.df.dropna(subset=['join_date'])
 
-        display("\nList of invalid dates:")
-        display(invalid_join_dates_list)
+        # LOGGING display rows that are invalid (not converted)
+        # display("\nList of invalid dates:")
+        # display(invalid_dates_list)
 
-        num_rows = self.df.shape[0]
-        print(f"Number of rows after country cleaning: {num_rows}")
+        # LOGGING: print number of rows 
+        # num_rows = self.df.shape[0]
+        # print(f"Number of rows after cleaning join_date: {num_rows}")
 
+        # LOGGING: print number of rows 
         num_rows = self.df.shape[0]
-        print(f"Number of rows in legacy_users db: {num_rows}")
+        print(f"Number of rows at end of cleaning legacy users data: {num_rows}")
 
         # return cleaned df 
         return self
@@ -328,21 +342,23 @@ class DataCleaning:
 
     def clean_card_data(self):  
         """
-        This method retrieves a table from a pdf using the DataExtractor method 'retrieve_pdf_data', 
-        It then cleans the 'expiry_date' column by removing incorrect values and converting it to datetime. 
-        It then removes incorrect card providers from the 'card_provider' column,
-        It then removes any card numbers that aren't integers and resets the index again 
+        This method retrieves a table from a pdf using the DataExtractor method 'retrieve_pdf_data'. It then: 
+        1. Cleans the 'expiry_date' column by removing incorrect values and converting it to datetime. 
+        2. Cleans card numbers via a regex 
+        3. Converts date_payment_confirmed to datetime 
+        4. Removes incorrect card providers from the 'card_provider' column,
+        It then resets the index 
 
         Args: 
             None 
 
         Returns: 
-            dataframe: A dataframe with cleaned 'expiry_date', 'card_number' and 'card_provider' columns
+            dataframe: A dataframe with cleaned 'expiry_date', 'card_number', 'date_payment_confirmed' and 'card_provider' columns
         """
 
-        # gettting the card data to clean 
+        # Gettting the card data to clean 
 
-        # LOGGING 
+        # LOGGING: start of method 
         print('Started clean_card_data method. Running retrieve_pdf_data to get the data')
         
         # Create an instance of DataExtractor
@@ -351,7 +367,14 @@ class DataCleaning:
         # Read data from the 'legacy_users' table
         df = instance.retrieve_pdf_data('https://data-handling-public.s3.eu-west-1.amazonaws.com/card_details.pdf')
         
+        # LOGGING: show the number of rows at the start of the cleaning processs
+        num_rows = df.shape[0]
+        print(f"Number of rows before cleaning card data: {num_rows}")
+
+
         # STEP 1: Cleaning expiry date column
+
+        # LOGGING: starting the expiry data cleaning 
         print('started cleaning expiry date column')
 
         # Define a regular expression pattern for the MM/YY format
@@ -360,26 +383,29 @@ class DataCleaning:
         # Use str.match to filter rows where 'expiry_date' matches the pattern
         df = df[df['expiry_date'].str.match(pattern_exp)].reset_index(drop=True)
 
-        print('started datetime conversion for expiry_date')
-
         # Convert expiry_date to datetime, coerce errors to NaT using .loc to avoid SettingWithCopyWarning
         df.loc[:, 'datetime_expiry_date'] = pd.to_datetime(df['expiry_date'], format='%m/%y', errors='coerce')
 
-        # Identify rows that will be removed (rows with NaT in 'datetime_expiry_date')
-        removed_expiry_dates = df[df['datetime_expiry_date'].isna()]
+        # LOGGING: Identify rows that will be removed (rows with NaT in 'datetime_expiry_date')
+        # removed_expiry_dates = df[df['datetime_expiry_date'].isna()]
 
-        print("Expiry date datetime conversion that will be removed:")
-        display(removed_expiry_dates)
+        # LOGGIN: show the dates that would be removed
+        # print("Expiry date datetime conversion that will be removed:")
+        # display(removed_expiry_dates)
 
         # Reset the index
         df = df.reset_index(drop=True)
 
-        num_rows = df.shape[0]
-        print(f"Number of rows after cleaning expiry date: {num_rows}")
+        # LOGGING: show number rows after cleaning expiry date 
+        # num_rows = df.shape[0]
+        # print(f"Number of rows after cleaning expiry date: {num_rows}")
+
 
         # STEP 2: Cleaning card number
-        num_rows = df.shape[0]
-        print(f"Number of rows before card number cleaning: {num_rows}")
+        
+        # LOGGING: show number of rows at start of cleaning 
+        # num_rows = df.shape[0]
+        # print(f"Number of rows before card number cleaning: {num_rows}")
 
         # Define a regular expression pattern for numbers only
         pattern_card = r'^\d+$'
@@ -393,9 +419,12 @@ class DataCleaning:
         # Use apply with a lambda function to filter rows where 'card_number' matches the pattern
         df = df[df['card_number'].apply(lambda x: bool(re.match(pattern_card, x)))].reset_index(drop=True)
 
+
         # STEP 3: Cleaning date_payment_confirmed
-        num_rows = df.shape[0]
-        print(f"Number of rows before date_payment_confirmed cleaning: {num_rows}")
+        
+        # LOGGING: show number of rows at start of cleaning
+        # num_rows = df.shape[0]
+        # print(f"Number of rows before date_payment_confirmed cleaning: {num_rows}")
 
         # Initialize a list to store invalid dates
         invalid_dates_list = []
@@ -415,47 +444,48 @@ class DataCleaning:
         # Apply the function to the 'date_payment_confirmed' column
         df.loc[:, 'date_payment_confirmed'] = df['date_payment_confirmed'].apply(parse_date)
 
-        # Identify rows that would be null after conversion
-        invalid_rows = df[df['date_payment_confirmed'].isna()]
-
-        display("Rows that would be converted to NULL:")
-        display(invalid_rows)
-
-        # Drop rows with NaN (invalid dates)
-        df_cleaned = df.dropna(subset=['date_payment_confirmed'])
-
+        # LOGGING: show dates that couldn't be converted from parse_date function
         display("\nList of invalid dates:")
         display(invalid_dates_list)
 
+        # LOGGING: Identify and print rows that are NULL and so will be removed by df.dropna(subset=['date_payment_confirmed'])
+        invalid_rows = df[df['date_payment_confirmed'].isna()]
+        display("Rows that will be dropped:")
+        display(invalid_rows)
+
+        # Drop rows with NaN in 'date_payment_confirmed'
+        df = df.dropna(subset=['date_payment_confirmed'])
+
+        # LOGGING: show number of rows after date_payment_confirmed cleaning 
         num_rows = df.shape[0]
         print(f"Number of rows after date_payment_confirmed cleaning: {num_rows}")
 
         # STEP 4: removing incorrect values from the card providers column 
 
-        # LOGGING 
+        # LOGGING start of section 
         print('started removing incorrect values from card providers column')
 
-        num_rows = df.shape[0]
-        print(f"Number of rows after expiry date to date time cleaning: {num_rows}")
+        # LOGGING rows before card_provider cleaning  
+        # num_rows = df.shape[0]
+        # print(f"Number of rows before card provider cleaning: {num_rows}")
 
-        #create a valid providers list  
+        # Create a valid providers list  
         valid_providers = ['Diners Club / Carte Blanche', 'American Express', 'JCB 16 digit','JCB 15 digit', 'Maestro', 'Mastercard', 'Discover','VISA 19 digit', 'VISA 16 digit', 'VISA 13 digit']
 
         # Filter the DataFrame to keep only rows with valid card providers
         df = df[df['card_provider'].isin(valid_providers)]
 
+        # LOGGING: check to see which have been removed 
         removed_providers = df[~df['card_provider'].isin(valid_providers)]
         display("Card provider rows that will be removed:")
-        display(removed_expiry_dates)
+        display(removed_providers)
 
         #Reset the index of the filtered DataFrame
         df = df.reset_index(drop=True)
 
-        num_rows = df.shape[0]
-        print(f"Number of rows after card provider cleaning: {num_rows}")
-
-        num_rows = df.shape[0]
-        print(f"Number of rows after card cleaning: {num_rows}")
+        # LOGGING rows before card_provider cleaning
+        # num_rows = df.shape[0]
+        # print(f"Number of rows after card cleaning: {num_rows}")
 
         return df
 
