@@ -529,21 +529,28 @@ class DataCleaning:
 
         #STEP 3 cleaning staff numbers
 
-        # Define the regex pattern to match digits only
-        pattern = r'^\d+$'
+        # Define function to remove letters from the staff_numbers
+        def clean_staff_numbers(value):
+            # Use regex to remove non-digit characters
+            cleaned_value = re.sub(r'\D', '', value)
+            return cleaned_value if cleaned_value else '0'  # Return '0' if the result is an empty string
 
-        # Create a boolean mask for rows that are not digits
-        mask = ~df['staff_numbers'].str.match(pattern, na=False)
+        # Create a boolean mask for rows that contain non-digit characters
+        mask = df['staff_numbers'].str.contains(r'\D', na=False)
 
-        # Display the rows that will be converted to 0
-        print("Rows that will be converted to 0:")
+        # Display the rows before they are changed
+        print("Rows before cleaning:")
         display(df[mask])
 
-        # Convert non-digit values to 0
-        df.loc[mask, 'staff_numbers'] = 0
+        # Apply the function to clean the staff_numbers column
+        df['staff_numbers'] = df['staff_numbers'].apply(clean_staff_numbers)
 
-        # Convert the staff_numbers column to integer
+        # Convert the cleaned staff_numbers column to integer
         df['staff_numbers'] = df['staff_numbers'].astype(int)
+
+        # Display the same rows after they have been cleaned
+        print("Rows after cleaning:")
+        display(df[mask])
 
         # STEP 4, cleaning continents 
 
@@ -623,7 +630,7 @@ class DataCleaning:
         return df 
 
 
-    def convert_weights_to_kg(self):
+    def clean_products_table(self):
         
         """
         This method retrieves a CSV of products from s3 using the extract_from_s3 method of the DataExtractor class 
@@ -638,7 +645,7 @@ class DataCleaning:
         """
 
         #LOGGING start of method 
-        print('started convert_weights_to_kg')
+        print('started clean_products_table')
 
         #creating instance of dataextractor 
         instance = DataExtractor()
@@ -857,7 +864,12 @@ class DataCleaning:
         df = df[df['year'].str.match(year_regex)]
  
         num_rows = df.shape[0]
-        print(f"Number of rows date times after cleaning: {num_rows}")
+        print(f"Number of rows date times after year cleaning: {num_rows}")
+
+        df['complete_timestamp'] = pd.to_datetime(df['year'] + '-' + df['month'] + '-' + df['day'] + ' ' + df['timestamp'], format='%Y-%m-%d %H:%M:%S')
+
+        num_rows = df.shape[0]
+        print(f"Number of rows date times after date_events cleaning: {num_rows}")
 
         # return the cleaned dataframe 
         return df 
@@ -905,7 +917,7 @@ databaseconnector_instance.upload_to_db(clean_store_data_df, 'dim_store_details'
 # # WEIGHT TO KG (CLEAN PRODUCTS TABLE)
 
 # # fetching and cleaning weight data 
-clean_weights_df = datacleaning_instance.convert_weights_to_kg()
+clean_weights_df = datacleaning_instance.clean_products_table()
 
 # # uploading weight data to database, using 'upload_to_db method of DatabaseConnector class, and called the weight data 'dim_products' 
 databaseconnector_instance.upload_to_db(clean_weights_df, 'dim_products')
