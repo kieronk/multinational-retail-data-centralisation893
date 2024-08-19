@@ -4,6 +4,11 @@ my_db_creds.yaml
 
 api_key.yaml
 
+api_client.log
+
+
 # Ignore all YAML files in any directory
 
 *.yaml
+
+*.log 
