@@ -1,6 +1,6 @@
-#Centralisation of data for retail organisation 
+##Centralisation of data for retail organisation 
   
-Overview 
+Overview: 
 The project brings together a series of data from different locations and puts them into a postgres database in order that they can be analysed further. 
 
 There are 5 code files: 
