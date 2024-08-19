@@ -371,7 +371,6 @@ class DataCleaning:
         num_rows = df.shape[0]
         print(f"Number of rows before cleaning card data: {num_rows}")
 
-
         # STEP 1: Cleaning expiry date column
 
         # LOGGING: starting the expiry data cleaning 
@@ -389,7 +388,7 @@ class DataCleaning:
         # LOGGING: Identify rows that will be removed (rows with NaT in 'datetime_expiry_date')
         # removed_expiry_dates = df[df['datetime_expiry_date'].isna()]
 
-        # LOGGIN: show the dates that would be removed
+        # LOGGING: show the dates that would be removed
         # print("Expiry date datetime conversion that will be removed:")
         # display(removed_expiry_dates)
 
@@ -445,20 +444,20 @@ class DataCleaning:
         df.loc[:, 'date_payment_confirmed'] = df['date_payment_confirmed'].apply(parse_date)
 
         # LOGGING: show dates that couldn't be converted from parse_date function
-        display("\nList of invalid dates:")
-        display(invalid_dates_list)
+        #display("\nList of invalid dates:")
+        #display(invalid_dates_list)
 
         # LOGGING: Identify and print rows that are NULL and so will be removed by df.dropna(subset=['date_payment_confirmed'])
-        invalid_rows = df[df['date_payment_confirmed'].isna()]
-        display("Rows that will be dropped:")
-        display(invalid_rows)
+        #invalid_rows = df[df['date_payment_confirmed'].isna()]
+        #display("Rows that will be dropped:")
+        #display(invalid_rows)
 
         # Drop rows with NaN in 'date_payment_confirmed'
         df = df.dropna(subset=['date_payment_confirmed'])
 
         # LOGGING: show number of rows after date_payment_confirmed cleaning 
-        num_rows = df.shape[0]
-        print(f"Number of rows after date_payment_confirmed cleaning: {num_rows}")
+        #num_rows = df.shape[0]
+        #print(f"Number of rows after date_payment_confirmed cleaning: {num_rows}")
 
         # STEP 4: removing incorrect values from the card providers column 
 
@@ -493,18 +492,21 @@ class DataCleaning:
     def cleaning_store_details(self):
 
         """
-        This method retrieves the stores date using the DataExtractor method 'retrieve_store_data' 
-        It convert latitiude to a number, then drops rows with missing data
-        It drops the 'lat' column 
-        It then filters out items in the column 'locality' that aren't real place names or NULL
-        It then replaces incorrect spellings in the 'continent' column  
-        It then converts 'opening_date' to a datetime object and drops NaT 
-        
+        This method retrieves the stores date using the DataExtractor method 'retrieve_store_data'. Then goes through the following steps: 
+        1. Updates the webstore record (index 0) to have placeholder values to ensure it isn't treated as NULL 
+        2. Removes the non-sensical records and NULL records from 'lat' column 
+        3. Cleans 'staff_numbers' via a function that removes letters from staff_numbers 
+        4. Replaces incorrect spellings in the 'continent' column 
+        5. Filters out items in the column 'locality' that aren't real place names or NULL
+        6. Converts opening date to datetime object and drops NA rows     
+                
         Args: 
             None 
 
         Returns: 
-            dataframe: A dataframe with cleaned 'longitude', 'latitude', 'locality', 'continent' and'opening_date' columns 
+            dataframe: A cleaned dataframe which has: 
+                webstore record with placeholder values
+                cleaned: 'lat', 'staff_numbers', 'continent', 'locality', and'opening_date' columns 
 
         """
 
@@ -520,9 +522,9 @@ class DataCleaning:
         num_rows = df.shape[0]
         print(f"Number of rows store data before cleaning: {num_rows}")
 
-        # STEP 1 make the webstore have prooper entries 
+        # STEP 1 Update the webstore to have placeholder values to ensure it isn't treated as NULL 
 
-        # logging 
+        # LOGGING: 
         # before = df.iloc[0]
         # display(before)
 
@@ -536,7 +538,7 @@ class DataCleaning:
         df.loc[index_to_update, 'locality'] = 'online'
         df.loc[index_to_update, 'latitude'] = 1
 
-        # logging
+        # LOGGING:
         # after = df.iloc[0]
         # display(after)
 
@@ -549,13 +551,15 @@ class DataCleaning:
         # Create a boolean mask for rows to keep: rows that do not match the pattern and are not 'NULL'
         mask = ~df['lat'].str.contains(pattern, na=False) & ~df['lat'].isin(['NULL'])
 
-        display(df[~mask])
+        # LOGGING:    
+        #display(df[~mask])
 
         # Filter the DataFrame using the mask
         df = df[mask]
 
-        num_rows = df.shape[0]
-        print(f"Number of rows store data after dropping lat column: {num_rows}")
+        # LOGGING:
+        #num_rows = df.shape[0]
+        #print(f"Number of rows store data after dropping lat column: {num_rows}")
 
         #STEP 3 cleaning staff numbers
 
@@ -565,12 +569,14 @@ class DataCleaning:
             cleaned_value = re.sub(r'\D', '', value)
             return cleaned_value if cleaned_value else '0'  # Return '0' if the result is an empty string
 
+        # LOGGING:
         # Create a boolean mask for rows that contain non-digit characters
-        mask = df['staff_numbers'].str.contains(r'\D', na=False)
+        #mask = df['staff_numbers'].str.contains(r'\D', na=False)
 
+        # LOGGING:
         # Display the rows before they are changed
-        print("Rows before cleaning:")
-        display(df[mask])
+        #print("Rows before cleaning:")
+        #display(df[mask])
 
         # Apply the function to clean the staff_numbers column
         df['staff_numbers'] = df['staff_numbers'].apply(clean_staff_numbers)
@@ -578,11 +584,12 @@ class DataCleaning:
         # Convert the cleaned staff_numbers column to integer
         df['staff_numbers'] = df['staff_numbers'].astype(int)
 
+        # LOGGING:
         # Display the same rows after they have been cleaned
-        print("Rows after cleaning:")
-        display(df[mask])
+        #print("Rows after cleaning:")
+        #display(df[mask])
 
-        # STEP 4, cleaning continents 
+        # STEP 4: cleaning continents 
 
         # replacing incorrect spellings of continents 
         continent_replacements = {
@@ -601,10 +608,10 @@ class DataCleaning:
         pattern = r'^[a-zA-Z\s-]+$'
         locality_mask = df['locality'].str.match(pattern, na=False) | (df.index == 0)
 
-        # Capture the rows that will be dropped
-        rows_dropped_by_locality = df[~locality_mask | df['locality'].replace('NULL', np.nan).isna()]
-        print("Rows that will be dropped during locality cleaning:")
-        print(rows_dropped_by_locality)
+        # LOGGING: Capture the rows that will be dropped
+        #rows_dropped_by_locality = df[~locality_mask | df['locality'].replace('NULL', np.nan).isna()]
+        #print("Rows that will be dropped during locality cleaning:")
+        #print(rows_dropped_by_locality)
 
         # Apply the locality mask
         df = df[locality_mask]
@@ -613,13 +620,15 @@ class DataCleaning:
         df['locality'] = df['locality'].replace('NULL', np.nan)
         df = df.dropna(subset=['locality'])
 
-        num_rows = df.shape[0]
-        print(f"Number of rows store data after cleaning locality: {num_rows}")
+        # LOGGING:
+        #num_rows = df.shape[0]
+        #print(f"Number of rows store data after cleaning locality: {num_rows}")
 
-        # STEP 5, cleaning opening_date 
+        # STEP 6, Converting opening_date to datetime  
 
-        num_rows = df.shape[0]
-        print(f"Number of rows before opening_date cleaning: {num_rows}")
+        # LOGGING:
+        #num_rows = df.shape[0]
+        #print(f"Number of rows before opening_date cleaning: {num_rows}")
 
         # Initialize a list to store invalid dates
         invalid_dates_list = []
@@ -639,23 +648,26 @@ class DataCleaning:
         # Apply the function to the 'date_of_birth' column
         df['opening_date'] = df['opening_date'].apply(parse_date)
 
+        # LOGGING:
         # Identify rows that would be null after conversion
-        invalid_rows = df[df['opening_date'].isna()]
-
-        display("Rows that would be converted to NULL:")
-        display(invalid_rows)
+        #invalid_rows = df[df['opening_date'].isna()]
+        #display("Rows that would be converted to NULL:")
+        #display(invalid_rows)
 
         # Drop rows with NaN (invalid dates)
-        df_cleaned = df.dropna(subset=['opening_date'])
+        df = df.dropna(subset=['opening_date'])
 
-        display("\nList of invalid dates:")
-        display(invalid_dates_list)
+        # LOGGING:
+        #display("\nList of invalid dates:")
+        #display(invalid_dates_list)
+        
+        # LOGGING:
+        #num_rows = df.shape[0]
+        #print(f"Number of rows after opening_date cleaning: {num_rows}")
 
-        num_rows = df.shape[0]
-        print(f"Number of rows after opening_date cleaning: {num_rows}")
-
-        num_rows = df.shape[0]
-        print(f"Number of rows store data after cleaning: {num_rows}")
+        # LOGGING:
+        #num_rows = df.shape[0]
+        #print(f"Number of rows store data after cleaning: {num_rows}")
         
         return df 
 
@@ -663,14 +675,17 @@ class DataCleaning:
     def clean_products_table(self):
         
         """
-        This method retrieves a CSV of products from s3 using the extract_from_s3 method of the DataExtractor class 
-        Then creates a new column in the df 'weight_in_kg' and fills it with the weights from the 'weight' column converted to kg 
-        It also removes any rows with missing data, and removes rows with incorrect data 
+        This method retrieves a CSV of products from s3 using the extract_from_s3 method of the DataExtractor class. It then cleans the data via the following steps: 
+        1. Creates a new column in the df 'weight_in_kg' and fills it with the weights from the 'weight' column converted to kg 
+        2. Cleans mispelt values in the 'removed' column 
+        3. Clean 'category' column via regex 
+        4. Convert 'date_added' column to a datetime object 
+
         Args: 
             None 
 
         Returns: 
-            dataframe: A dataframe with the new 'weight_in_kg' column 
+            dataframe: A dataframe with the new 'weight_in_kg' column, cleaned 'removed', 'category' and 'date_added' columns 
 
         """
 
@@ -683,8 +698,12 @@ class DataCleaning:
         #retrieving the data from the stores API
         df = instance.extract_from_s3('s3://data-handling-public/products.csv') 
 
-        num_rows = df.shape[0]
-        display(f"Number of rows before cleaning: {num_rows}")
+        # LOGGING:
+        #num_rows = df.shape[0]
+        #display(f"Number of rows before cleaning: {num_rows}")
+        
+        #STEP 1: Add column with weights in kg 
+
         # Define the regex pattern to match numbers and letters
         weight_pattern = re.compile(r'([0-9.]+)([a-zA-Z]+)')
 
@@ -722,49 +741,50 @@ class DataCleaning:
         # Apply the conversion to the 'weight' column
         df['weight_in_kg'] = df['weight'].apply(convert_to_kg)
 
-        num_rows = df.shape[0]
-        display(f"Number of rows after conversion: {num_rows}")
+        # LOGGING:
+        #num_rows = df.shape[0]
+        #display(f"Number of rows after conversion: {num_rows}")
+
+        # STEP 2: Clean mispelt values
 
         # Correct the misspelled value
-        #df['removed'] = df['removed'].replace('Still_avaliable', 'Still_available')
         df['removed'] = df['removed'].str.replace('Still_avaliable', 'Still_available')
 
-        num_rows = df.shape[0]
-        display(f"Number of rows after replace still available: {num_rows}")
-
-        display(df['removed'].unique())
-
-        # Filter the DataFrame to keep only 'Still_available' or 'Removed'
-        # Correct the misspelled value using str.replace
+        # LOGGING:
+        #num_rows = df.shape[0]
+        #display(f"Number of rows after replace still available: {num_rows}")
 
         # Define valid values
         valid_values = ['Still_available', 'Removed']
 
+        # LOGGING:
         # Identify rows that will be removed
-        rows_to_remove = df[~df['removed'].isin(valid_values)]
-
+        #rows_to_remove = df[~df['removed'].isin(valid_values)]
         # Display the list of items that will be removed
-        print("Items to be removed:")
-        print(rows_to_remove)
+        #print("Items to be removed:")
+        #print(rows_to_remove)
 
         # Filter the DataFrame to keep only 'Still_available' or 'Removed'
         df = df[df['removed'].isin(valid_values)]
 
+        # LOGGING:
+        #num_rows = df.shape[0]
+        #display(f"Number of rows after cleaning of removed column: {num_rows}")
 
-        num_rows = df.shape[0]
-        display(f"Number of rows after cleaning of removed column: {num_rows}")
-
-
+        # LOGGING:
         # Capture rows with NaN values before dropping them
-        rows_with_na = df[df.isna().any(axis=1)]
-        display("Rows with NaN values:")
-        display(rows_with_na)
+        #rows_with_na = df[df.isna().any(axis=1)]
+        #display("Rows with NaN values:")
+        #display(rows_with_na)
 
         # Drop rows with NaN values
         df = df.dropna(axis=0)
 
-        num_rows = df.shape[0]
-        display(f"Number of rows after dropna: {num_rows}")
+        # LOGGING:
+        #num_rows = df.shape[0]
+        #display(f"Number of rows after dropna: {num_rows}")
+
+        # STEP 3: Clean 'category' column 
 
         # Define the regex pattern for the 'category' column
         category_pattern = re.compile(r'^[a-zA-Z\-]+$')
@@ -781,11 +801,11 @@ class DataCleaning:
         num_rows = df.shape[0]
         display(f"Number of rows after category filter: {num_rows}")
 
+        # STEP 4: convert date_added to datetime object 
 
-        # STEP 5, cleaning date_added 
-
-        num_rows = df.shape[0]
-        print(f"Number of rows before opening_date cleaning: {num_rows}")
+        # LOGGING:
+        # num_rows = df.shape[0]
+        # print(f"Number of rows before opening_date cleaning: {num_rows}")
 
         # Initialize a list to store invalid dates
         invalid_dates_list = []
@@ -805,23 +825,26 @@ class DataCleaning:
         # Apply the function to the 'date_of_birth' column
         df['date_added'] = df['date_added'].apply(parse_date)
 
+        # LOGGING:
         # Identify rows that would be null after conversion
-        invalid_rows = df[df['date_added'].isna()]
-
-        display("Rows that would be converted to NULL:")
-        display(invalid_rows)
+        #invalid_rows = df[df['date_added'].isna()]
+        #display("Rows that would be converted to NULL:")
+        #display(invalid_rows)
 
         # Drop rows with NaN (invalid dates)
-        df_cleaned = df.dropna(subset=['date_added'])
+        df = df.dropna(subset=['date_added'])
 
-        display("\nList of invalid dates:")
-        display(invalid_dates_list)
+        # LOGGING:
+        # display("\nList of invalid dates:")
+        # display(invalid_dates_list)
 
-        num_rows = df.shape[0]
-        print(f"Number of rows after date_added cleaning: {num_rows}")
+        # LOGGING:
+        #num_rows = df.shape[0]
+        #print(f"Number of rows after date_added cleaning: {num_rows}")
 
-        num_rows = df.shape[0]
-        print(f"Number of rows product data after cleaning: {num_rows}")
+        # LOGGING:
+        #num_rows = df.shape[0]
+        #print(f"Number of rows product data after cleaning: {num_rows}")
 
         return df 
 
@@ -848,16 +871,18 @@ class DataCleaning:
         # get the 'orders_table' data via the 'read_data_from_table' method, and assign it to df 
         df = instance.read_data_from_table('orders_table')
         
-        num_rows = df.shape[0]
-        print(f"Number of rows orders data before cleaning: {num_rows}") 
+        # LOGGING:
+        # num_rows = df.shape[0]
+        # print(f"Number of rows orders data before cleaning: {num_rows}") 
 
         # drop unwanted columns 
         df = df.drop('1', axis=1)
         df = df.drop('first_name', axis=1)
         df = df.drop('last_name', axis=1)
         
-        num_rows = df.shape[0]
-        print(f"Number of rows orders data after cleaning: {num_rows}")
+        # LOGGING:
+        # num_rows = df.shape[0]
+        # print(f"Number of rows orders data after cleaning: {num_rows}")
 
         # return the cleaned df 
         return df 
@@ -865,7 +890,7 @@ class DataCleaning:
     def clean_date_events(self):
         """
         This method retrieves the 'date_events' from an S3 resource using the DataExtractor's class 'extract_from_s3' 
-        It then cleans the 'year' format 
+        It then cleans the 'year' format and converts it to a datetime object  
         
         Args: 
             None 
@@ -884,8 +909,9 @@ class DataCleaning:
         # extract the 'date_events' data from the S3 resource 
         df = instance.extract_from_s3('https://data-handling-public.s3.eu-west-1.amazonaws.com/date_details.json')
         
-        num_rows = df.shape[0]
-        print(f"Number of rows date times before cleaning: {num_rows}")
+        # LOGGING:
+        # num_rows = df.shape[0]
+        # print(f"Number of rows date times before cleaning: {num_rows}")
 
         # define the regex pattern for cleaning the year 
         year_regex = r'^\d{4}$'
@@ -893,18 +919,18 @@ class DataCleaning:
         # apply the regex pattern to clean the year 
         df = df[df['year'].str.match(year_regex)]
  
-        num_rows = df.shape[0]
-        print(f"Number of rows date times after year cleaning: {num_rows}")
+        # LOGGING:
+        # num_rows = df.shape[0]
+        # print(f"Number of rows date times after year cleaning: {num_rows}")
 
         df['complete_timestamp'] = pd.to_datetime(df['year'] + '-' + df['month'] + '-' + df['day'] + ' ' + df['timestamp'], format='%Y-%m-%d %H:%M:%S')
 
-        num_rows = df.shape[0]
-        print(f"Number of rows date times after date_events cleaning: {num_rows}")
+        # LOGGING:
+        # num_rows = df.shape[0]
+        # print(f"Number of rows date times after date_events cleaning: {num_rows}")
 
         # return the cleaned dataframe 
         return df 
-
-
 
 
 # TESTING / CALLING CODE 
@@ -920,7 +946,7 @@ databaseconnector_instance = DatabaseConnector()
 # dropping data bases 
 databaseconnector_instance.reset_database() 
  
-# # LEGACY USER DATA 
+# LEGACY USER DATA 
 
 # fetching and cleaning legacy users data 
 clean_legacy_users_df = datacleaning_instance.clean_legacy_users_data() 
@@ -928,7 +954,7 @@ clean_legacy_users_df = datacleaning_instance.clean_legacy_users_data()
 # uploading legacy users data to database, using 'upload_to_db method of DatabaseConnector class, and called the legacy users data 'dim_users' 
 databaseconnector_instance.upload_to_db(clean_legacy_users_df, 'dim_users')
 
-# #CARD DATA 
+# CARD DATA 
 
 # fetching and cleaning card data 
 clean_card_data_df = datacleaning_instance.clean_card_data() 
@@ -944,68 +970,26 @@ clean_store_data_df = datacleaning_instance.cleaning_store_details()
 # uploading store_details data to database, using 'upload_to_db method of DatabaseConnector class, and called the legacy users data 'dim_store_details' 
 databaseconnector_instance.upload_to_db(clean_store_data_df, 'dim_store_details')
 
-# # WEIGHT TO KG (CLEAN PRODUCTS TABLE)
+# CLEAN PRODUCTS 
 
-# # fetching and cleaning weight data 
+# # fetching and cleaning products data 
 clean_weights_df = datacleaning_instance.clean_products_table()
 
-# # uploading weight data to database, using 'upload_to_db method of DatabaseConnector class, and called the weight data 'dim_products' 
+# # uploading products data to database, using 'upload_to_db method of DatabaseConnector class, and called the products data 'dim_products' 
 databaseconnector_instance.upload_to_db(clean_weights_df, 'dim_products')
 
-# # ORDERS TABLE  
+# ORDERS TABLE  
 
-# fetching and cleaning card data 
+# fetching and cleaning orders data 
 clean_orders_df = datacleaning_instance.clean_orders_data()
 
-# # uploading legacy users data to database, using 'upload_to_db method of DatabaseConnector class, and called the legacy users data 'dim_users' 
+# uploading orders data to database, using 'upload_to_db method of DatabaseConnector class, and called the legacy users data 'orders_table' 
 databaseconnector_instance.upload_to_db(clean_orders_df, 'orders_table')
 
-# # DATE EVENTS  
+# DATE EVENTS  
 
-# # fetching and cleaning card data 
+# fetching and date events data 
 clean_date_events_df = datacleaning_instance.clean_date_events()
 
-# # uploading legacy users data to database, using 'upload_to_db method of DatabaseConnector class, and called the legacy users data 'dim_users' 
+# uploading date events data to database, using 'upload_to_db method of DatabaseConnector class, and called the date events data 'dim_date_times' 
 databaseconnector_instance.upload_to_db(clean_date_events_df, 'dim_date_times')
-
-
-
-# OLD BELOW 
-
-
-
-
-
-#databaseconnector_instance.upload_to_db(cleaned_orders_df, 'orders_table')
-
-# ----
-
-# cleaning the text fields in the legacy users table 
-
-#databaseconnector_instance.upload_to_db(cleaned_orders_df, 'orders_table')
-
-#uploading the cleaned date events to the SQL database 
-#cleaned_date_events_df = datacleaning_instance.clean_date_events()
-
-#uploading the cleaned order details to the SQL database 
-#databaseconnector_instance.upload_to_db(cleaned_date_events_df, 'dim_date_times')
-#databaseconnector_instance.upload_to_db(cleaned_date_events_df, 'dim_date_times')
-
-
-
-
-
-#Code to clean addresses if needed 
-
-#cleaning special characters and punctuation from addresses 
-#address_before_transformation = lower_case_df.iloc[0]['address']
-#print('this is address before transformation', address_before_transformation)
-#lower_case_df['address'] = lower_case_df['address'].str.replace('ß', 's')
-#lower_case_df['address_converted'] = lower_case_df['address'].str.replace(r'[^a-zA-Z\s]', '', regex=True)
-#address_after_transformation = lower_case_df.iloc[0]['address_converted']
-#print('this is address after transformation', address_after_transformation)
-
-#print before and after examples to check it worked 
-#after_lower_case_example = lower_case_df.iloc[0]['first_name']
-#print('again, this is the name before transformation:', before_lower_case_example)
-#print('this is the name after transformation:', after_lower_case_example)

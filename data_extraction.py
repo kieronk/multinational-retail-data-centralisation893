@@ -275,47 +275,11 @@ class DataExtractor:
 
 
 
-# START HERE code below is for testing purposes 
-
-
-#instance = DataExtractor()
-
-#x = instance.retrieve_stores_data() 
-
-#print(x)
-#print(x['latitude'].unique())
-#table = instance.read_rds_table() 
-
-#print(table)
-
-#instance.retrieve_stores_data() 
+# TESTING CODE 
 
 #instance = DataExtractor()
 #df = instance.extract_from_s3('https://data-handling-public.s3.eu-west-1.amazonaws.com/date_details.json')
-
-#print(df)
-#instance.list_number_of_stores()
+#print(combined_df.head(5)) 
 
 #example = instance.extract_from_s3('s3://data-handling-public/products.csv')
 #print(example)
-
-# code below is to test that it works 
-
-# Create an instance of DataExtractor
-#instance = DataExtractor()
-
-#combined_df = instance.retrieve_pdf_data('https://data-handling-public.s3.eu-west-1.amazonaws.com/card_details.pdf')
-
-#print(combined_df.head(5)) 
-
-#---- 
-# Read data from the 'legacy_users' table
-
-
-
-#orders_data_df = instance.read_data_from_table('orders_table')
-
-#print(orders_data_df)
-
-# Read data from the 'legacy_users' table
-# df = instance.read_data_from_table('legacy_users')

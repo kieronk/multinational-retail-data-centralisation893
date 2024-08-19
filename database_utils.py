@@ -208,6 +208,17 @@ class DatabaseConnector:
             print(f"An error occurred while uploading the table: {e}")
 
     def drop_table(self, engine, table_name):
+        """
+        This method drops specified tables from the database 
+
+        Args: 
+            engine: SQL engine  
+            table_name: the name that you want dropped 
+
+        Returns: 
+            Prints a message to indicate the table has been dropped successfully 
+        """
+        
         with engine.connect() as connection:
             with connection.begin():
                 drop_sql = f"DROP TABLE IF EXISTS {table_name} CASCADE;"
@@ -215,6 +226,16 @@ class DatabaseConnector:
                 print(f"Table '{table_name}' dropped successfully.")
     
     def reset_database(self):
+        """
+        This method drops tables from the database in order to 'reset' it, using the drop_table method   
+
+        Args: 
+            None
+        
+        Returns: 
+            A print message indicatoring that the tables have been dropped successfully    
+        """
+        
         # Initialize the engine
         engine = self.init_my_db_engine()
 
@@ -230,26 +251,3 @@ class DatabaseConnector:
 
         for table in tables_to_drop:
             self.drop_table(engine, table)
-
-# reset database code 
-#example = DatabaseConnector() 
-#example.reset_database() 
-
-# test if code works   
-#example = DatabaseConnector() 
-#example.init_my_db_engine() 
-#example.read_db_creds()
-#example.list_db_tables()
-#example.read_my_db_creds() 
-#example.read_api_key() 
-
-# Test for upload_to_db
-# data = {
-#     'card_number': [1, '2', 3, 4, '5678'],
-#     'other_column': [10, 20, 30, 40, 50]
-# }
-
-# df = pd.DataFrame(data)
-
-# example = DatabaseConnector() 
-# example.upload_to_db(df, 'test')
