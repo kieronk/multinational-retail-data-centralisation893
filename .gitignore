@@ -6,9 +6,15 @@ api_key.yaml
 
 api_client.log
 
+__pycache__/
 
-# Ignore all .yaml and .log files in any directory
+.DS_Store
+
+# Ignore all .yaml .log .ipynb files in any directory
 
 *.yaml
 
 *.log 
+
+*.ipynb
+
