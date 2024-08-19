@@ -7,7 +7,7 @@ api_key.yaml
 api_client.log
 
 
-# Ignore all YAML files in any directory
+# Ignore all .yaml and .log files in any directory
 
 *.yaml
 
