@@ -133,14 +133,17 @@ class DatabaseConnector:
 
     def upload_to_db(self, dataframe, table_name):
         """
-        This method uploads dataframes to my database 
+        Uploads a Pandas DataFrame to the specified database.
 
-        Args: 
-            dataframe: the dataframe to be uploaded 
-            table_name: the name that you want given to the table when it's uploaded 
+        Args:
+            dataframe (pd.DataFrame): The DataFrame to be uploaded.
+            table_name (str): The name to assign to the table in the database.
 
-        Returns: 
-            Prints a message to indicate whether the upload has been successful or raises an error if it hasn't  
+        Returns:
+            None
+
+        Raises:
+            Exception: If an error occurs during upload.  
         """
 
         # so I know that the method is working 
@@ -160,14 +163,14 @@ class DatabaseConnector:
 
     def drop_table(self, engine, table_name):
         """
-        This method drops specified tables from the database 
+        Drops a specified table from the database.
 
-        Args: 
-            engine: SQL engine  
-            table_name: the name that you want dropped 
+        Args:
+            engine (sqlalchemy.engine.base.Engine): The SQLAlchemy engine connected to the database.
+            table_name (str): The name of the table to be dropped.
 
-        Returns: 
-            Prints a message to indicate the table has been dropped successfully 
+        Returns:
+            None
         """
         
         with engine.connect() as connection:
@@ -178,13 +181,13 @@ class DatabaseConnector:
     
     def reset_database(self):
         """
-        This method drops tables from the database in order to 'reset' it, using the drop_table method   
+        Resets the database by dropping all tables defined in the `tables_to_drop` list.
 
-        Args: 
+        Args:
             None
         
-        Returns: 
-            A print message indicatoring that the tables have been dropped successfully    
+        Returns:
+            None    
         """
         
         # Initialize the engine
