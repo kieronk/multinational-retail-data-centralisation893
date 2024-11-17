@@ -1,7 +1,12 @@
+import logging
 import os 
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 from sqlalchemy.inspection import inspect
+
+# Setup logging configuration
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
 
 class DatabaseConnector: 
     """
@@ -97,7 +102,7 @@ class DatabaseConnector:
         db_url = f"{creds['driver']}://{creds['user']}:{creds['password']}@{creds['host']}:{creds['port']}/{creds['database']}"
 
         # Print statement to verify the function is working (for testing/debugging)
-        print(f"init_db_engine is working for {prefix} database")
+        logging.info(f"init_db_engine is working for {prefix} database")
 
         # Create and return the SQLAlchemy engine
         engine = create_engine(db_url)
@@ -116,7 +121,7 @@ class DatabaseConnector:
         """
         
         # so I know that the method is working 
-        print('list_db_tables is working')
+        logging.info('list_db_tables is working')
         
         #creates a engine to connect to the database by using the 'init_db_engine()' method  
         #engine = self.init_db_engine() PREFIX DB 
@@ -206,5 +211,9 @@ class DatabaseConnector:
         for table in tables_to_drop:
             self.drop_table(engine, table)
 
+#Testing code 
+instance = DatabaseConnector() 
+list = instance.list_db_tables()
+print(list)
 
 

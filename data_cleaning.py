@@ -11,6 +11,10 @@ from dateutil import parser
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
+# Setup logging configuration
+#logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+
 class DataCleaning: 
     
     """
