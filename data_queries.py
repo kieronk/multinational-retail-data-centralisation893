@@ -158,8 +158,8 @@ def get_sales_speed(connection):
 # RUNNING THE QUERIES 
 
 # Create instance of DatabaseConnector and engine
-instance = DatabaseConnector()
-engine = instance.init_my_db_engine()
+instance = DatabaseConnector() 
+engine = instance.init_db_engine(prefix="DB") 
 
 # Use the connection context to run the queries
 with engine.connect() as connection:

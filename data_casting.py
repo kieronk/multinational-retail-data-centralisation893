@@ -1,3 +1,4 @@
+import logging
 import pandas as pd
 from database_utils import DatabaseConnector
 import re 
@@ -5,10 +6,11 @@ from sqlalchemy import create_engine, text, insert
 from sqlalchemy.inspection import inspect
 from sqlalchemy.exc import SQLAlchemyError
 
+# Setup logging configuration
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # HELPER FUNCTIONS: these functions all support the data casting and analysis 
 
- 
 def fetch_data(connection, table_name, limit=5):
     """
         This function fetches data from the specified table in the local SQL database
@@ -70,10 +72,10 @@ def get_max_length(connection, table_name, column_name):
         if result and result[0] is not None:
             return result[0]
         else:
-            print(f"Warning: {table_name}.{column_name} has no non-null values or an error occurred.")
+            logging.info(f"Warning: {table_name}.{column_name} has no non-null values or an error occurred.")
             return 255  # Default length
     except Exception as e:
-        print(f"Error retrieving max length for {table_name}.{column_name}: {e}")
+        logging.error(f"Error retrieving max length for {table_name}.{column_name}: {e}")
         return 255  # Default length in case of error
  
 def remove_pound_symbol(connection, table_name, column_name):
@@ -154,7 +156,7 @@ def add_primary_key(connection, table_name, column_name):
     pk_exists = result.fetchone() is not None
     
     if pk_exists:
-        print(f"Primary key already exists for {table_name}, skipping addition.")
+        logging.info(f"Primary key already exists for {table_name}, skipping addition.")
         return
     
     # Remove rows with null values in the column
@@ -176,7 +178,7 @@ def add_primary_key(connection, table_name, column_name):
     duplicates = [row[0] for row in result]
     
     if duplicates:
-        print("Duplicates found, cannot add primary key.")
+        logging.info("Duplicates found, cannot add primary key.")
     else:
         # Create constraint name  
         constraint_name = f"{table_name}_pk"
@@ -188,7 +190,7 @@ def add_primary_key(connection, table_name, column_name):
         """
         connection.execute(text(add_pk_sql))
 
-        print(f"Primary key added to {table_name} on column {column_name}.")
+        logging.info(f"Primary key added to {table_name} on column {column_name}.")
 
 def add_foreign_key(connection, table_name, column_name, referenced_table, referenced_column):
     """
@@ -218,7 +220,7 @@ def add_foreign_key(connection, table_name, column_name, referenced_table, refer
     fk_exists = result.fetchone() is not None
     
     if fk_exists:
-        print(f"Foreign key already exists for {table_name}.{column_name}, skipping addition.")
+        logging.info(f"Foreign key already exists for {table_name}.{column_name}, skipping addition.")
         return
     
     # Remove rows with null values in the column
@@ -238,7 +240,7 @@ def add_foreign_key(connection, table_name, column_name, referenced_table, refer
     """
     connection.execute(text(add_fk_sql))
 
-    print(f"Foreign key added to {table_name}.{column_name} referencing {referenced_table}.{referenced_column}.")
+    logging.info(f"Foreign key added to {table_name}.{column_name} referencing {referenced_table}.{referenced_column}.")
 
 def get_primary_keys(connection, table_name):
     """
@@ -292,7 +294,7 @@ def print_invalid_rows(connection, table_name, column_name, regex_pattern):
     
     result = connection.execute(text(find_invalid_sql)).fetchall()
     if result:
-        print(f"Rows in {table_name}.{column_name} to be set to NULL:")
+        logging.info(f"Rows in {table_name}.{column_name} to be set to NULL:")
         for row in result:
             print(row)
 
@@ -904,9 +906,9 @@ def run_all_operations():
     
     # Create instance of a DatabaseConnector  
     instance = DatabaseConnector() 
-    # Create an engine by using the init_my_db_engine() method of DatabaseConnector 
-    engine = instance.init_my_db_engine()
-    
+    # Create an engine by using the init_db_engine() method of DatabaseConnector 
+    engine = instance.init_db_engine(prefix="DB") 
+
     #try to do engine.connect() 
     with engine.connect() as connection:
 
@@ -980,15 +982,15 @@ def run_all_operations():
 
                 # view primary keys 
                 primary_keys = get_primary_keys(connection, 'orders_table')
-                print(f"Primary keys for table 'orders_table': {primary_keys}")
+                logging.info(f"Primary keys for table 'orders_table': {primary_keys}")
 
                 # view foreign keys
                 foreign_keys = get_foreign_keys(connection, 'orders_table')
-                print(f"Foreign keys for table 'orders_table': {foreign_keys}")
+                logging.info(f"Foreign keys for table 'orders_table': {foreign_keys}")
 
             except SQLAlchemyError as e:
-                print(f"An error occurred: {e}")
+                logging.error(f"An error occurred: {e}")
 
-    print('End of call')
+    logging.info('End of call')
 
 run_all_operations()
