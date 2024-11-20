@@ -62,6 +62,7 @@ S3 URLs for:
 ## File structure 
 
 This is the database schema for the project:  
+
 ![sales_data_STAR](https://github.com/user-attachments/assets/de458dc9-46e8-4689-96c8-b08914f86637)
 
 To enable this to be created, there are 5 code files: 
