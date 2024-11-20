@@ -1,21 +1,12 @@
-db_creds.yaml
-
-my_db_creds.yaml
-
-api_key.yaml
-
-api_client.log
-
-__pycache__/
-
-.DS_Store
-
-# Ignore all .yaml .log .ipynb files in any directory
-
+# Ignore all YAML, log, and Jupyter Notebook files
 *.yaml
-
-*.log 
-
+*.log
 *.ipynb
 
+# Ignore environment files
 *.env
+
+# Ignore specific directories and OS-specific files
+__pycache__/
+.DS_Store
+
