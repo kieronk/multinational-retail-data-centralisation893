@@ -1,16 +1,16 @@
-### Centralisation of data for a multinational retail organisation 
+# Centralisation of data for a multinational retail organisation 
 
 ## Project background 
 
 This project simulates a data pipeline project for a multinational retail company that sells various goods across the globe.
 
-# Problem
+### Problem
 The company's sales data was spread across many different data sources making it not easily accessible or analysable by current members of the team. This leads to poor insight into performance and an inability to deliver data-driven strategy. 
 
-# Solution 
+### Solution 
 Enable the company to become more data-driven by making the organisation's sales data accessible from one centralised location and creating one 'single source of truth'. Then create and run queries on the database to get up-to-date insights for the business.
 
-# How 
+### How 
 To achieve this, I wrote code that brought together various data from an RDS database and different S3 buckets. I combined these data sources together into pandas dataframes, performed data transformations, stored them in a local postgres database, and ran a series of queries to deliver sales insights. 
 
 ## Installation instructions
@@ -52,14 +52,14 @@ S3 URLs for:
 - Sales product data
 - Credit card data 
 
-# Usage instructions
+## Usage instructions
 * Ensure all packages are downloaded 
 * Ensure the creation of an appropriate .env file
 * Run data_cleaning.py to extract and place the data in the postgres database
 * Run data_casting.py to perform the data transformations
 * Run data_queries.py to get the results of the queries 
 
-# File structure 
+## File structure 
 
 This is the database schema for the project:  
 ![sales_data_STAR](https://github.com/user-attachments/assets/de458dc9-46e8-4689-96c8-b08914f86637)
@@ -71,6 +71,6 @@ To enable this to be created, there are 5 code files:
 4. data_casting.py: this takes the data from the postgres database and casts it to the datatypes that are needed for data queries. It also adds primary and foreign keys to the database to create a STAR format (as seen in the schema diagram).     
 5. data_queries.py: this runs a series of queries on the data via SQL alchemy. 
 
-# Note
+## Note
 This project was created for personal educational purposes, based on coursework from [AI-Core](https://www.theaicore.com/). It is not intended for production use.
 
