@@ -66,11 +66,11 @@ This is the database schema for the project:
 ![sales_data_STAR](https://github.com/user-attachments/assets/de458dc9-46e8-4689-96c8-b08914f86637)
 
 To enable this to be created, there are 5 code files: 
-1. database_utils.py: this contains a class 'DatabaseConnector' and it's methods. The methods enable connection to the AWS RDS database using boto3, and also uploading the cleaned data to a postgres database.
-2. data_extraction.py: this has a class 'DataExtractor' and it's methods. The methods enable the extraction of data from AWS RDS database and S3 buckets. The methods extract the data and turns them into pandas dataframes.
+1. database_utils.py: this contains a class 'DatabaseConnector' and its methods. The methods enable connection to the AWS RDS database using boto3, and also uploading the cleaned data to a postgres database.
+2. data_extraction.py: this has a class 'DataExtractor' and its methods. The methods enable the extraction of data from the AWS RDS database and S3 buckets. The methods extract the data and turn them into pandas dataframes.
 3. data_cleaning.py: this contains the class 'DataCleaning' and its methods. It uses methods from the DataExtractor class to obtain the data, then performs the required cleaning steps.
 4. data_casting.py: this takes the data from the postgres database and casts it to the datatypes that are needed for data queries. It also adds primary and foreign keys to the database to create a STAR format (as seen in the schema diagram).     
-5. data_queries.py: this runs a series of queries on the data via SQL alchemy. 
+5. data_queries.py: this runs a series of queries on the data via SQL Alchemy. 
 
 ## Note
 This project was created for personal educational purposes, based on coursework from [AI-Core](https://www.theaicore.com/). It is not intended for production use.
