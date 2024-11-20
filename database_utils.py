@@ -7,7 +7,6 @@ from sqlalchemy.inspection import inspect
 # Setup logging configuration
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-
 class DatabaseConnector: 
     """
     A utility class for managing database connections, including loading credentials, 
@@ -73,10 +72,10 @@ class DatabaseConnector:
                     raise ValueError(f"Missing one or more required {db_type} database environment variables")
 
         except ValueError as ve:
-            print(f"Error loading environment variables: {ve}")
+            logging.error(f"Error loading environment variables: {ve}")
             raise
         except Exception as e:
-            print(f"An unexpected error occurred: {e}")
+            logging.error(f"An unexpected error occurred: {e}")
             raise
 
     def init_db_engine(self, prefix="DB"):   
@@ -101,11 +100,12 @@ class DatabaseConnector:
         # Construct the database URL, including the driver and credentials 
         db_url = f"{creds['driver']}://{creds['user']}:{creds['password']}@{creds['host']}:{creds['port']}/{creds['database']}"
 
-        # Print statement to verify the function is working (for testing/debugging)
+        # Logging to verify the method is working 
         logging.info(f"init_db_engine is working for {prefix} database")
 
         # Create and return the SQLAlchemy engine
         engine = create_engine(db_url)
+        
         return engine    
 
     def list_db_tables(self): 
@@ -119,15 +119,13 @@ class DatabaseConnector:
         Returns:
             list: A list of table names in the specified database.   
         """
-        
-        # so I know that the method is working 
+         
         logging.info('list_db_tables is working')
         
-        #creates a engine to connect to the database by using the 'init_db_engine()' method  
-        #engine = self.init_db_engine() PREFIX DB 
+        # creates a engine to connect to the database by using the 'init_db_engine()' method  
         engine = self.init_db_engine(prefix="RDS")
     
-        #creating an inspector object, which is like a librarian who looks up things in the library (i.e. database). I pass it the 'engine' as it needs a engine to 'power' and manage it's connection to the database 
+        # creating an inspector object to access data in the database and pass in engine to manage it's connection to the database 
         inspector = inspect(engine) 
 
         # getting the tables name using the get_table_names method of the inspector object from SQLAlchemy 
@@ -151,20 +149,18 @@ class DatabaseConnector:
             Exception: If an error occurs during upload.  
         """
 
-        # so I know that the method is working 
-        print('upload_to_db is working')
+        logging.info('upload_to_db is working')
 
-        # run the init_my_db_engine method to get an engine for my database running 
-        #engine = self.init_my_db_engine()
+        # run the init_my_db_engine method to get an engine for local database  
         engine = self.init_db_engine(prefix="DB")
 
         try:
             # Upload the dataframe to the database
             dataframe.to_sql(name=table_name, con=engine, if_exists='replace', index=False)
-            print(f"Table '{table_name}' uploaded successfully.")
+            logging.info(f"Table '{table_name}' uploaded successfully.")
 
         except Exception as e:
-            print(f"An error occurred while uploading the table: {e}")
+            logging.error(f"An error occurred while uploading the table: {e}")
 
     def drop_table(self, engine, table_name):
         """
@@ -182,7 +178,7 @@ class DatabaseConnector:
             with connection.begin():
                 drop_sql = f"DROP TABLE IF EXISTS {table_name} CASCADE;"
                 connection.execute(text(drop_sql))
-                print(f"Table '{table_name}' dropped successfully.")
+                logging.info(f"Table '{table_name}' dropped successfully.")
     
     def reset_database(self):
         """
@@ -195,6 +191,8 @@ class DatabaseConnector:
             None    
         """
         
+        logging.info('reset_database is working')
+
         # Initialize the engine
         engine = self.init_db_engine(prefix="DB")
 
@@ -211,9 +209,6 @@ class DatabaseConnector:
         for table in tables_to_drop:
             self.drop_table(engine, table)
 
-#Testing code 
-instance = DatabaseConnector() 
-list = instance.list_db_tables()
-print(list)
+
 
 
