@@ -45,7 +45,7 @@ Credentials for both the RDS and local postgres databases:
 
 API endpoints for 
 - Retrieving the number of retail stores
-- Retrieiving the store details for each of the stores
+- Retrieving the store details for each of the stores
 
 S3 URLs for:  
 - Sales date data
