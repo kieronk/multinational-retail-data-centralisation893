@@ -11,7 +11,7 @@ The company's sales data was spread across many different data sources making it
 Enable the company to become more data-driven by making the organisation's sales data accessible from one centralised location and creating one 'single source of truth'. Then create and run queries on the database to get up-to-date insights for the business.
 
 ### How 
-To achieve this, I extractrf data from a variety of sources including an RDS Postgres database, PDFs  and CSV files from in an S3 bucket and JSON objects requested via an API endpoint. The data were then cleaned in Pandas and upserted into a local Postgres database. SQL was used to create the relationships between the tables to form a star-based schema, and then run queries on the finished database.
+To achieve this, I extracted data from a variety of sources including an RDS Postgres database, PDFs  and CSV files from in an S3 bucket and JSON objects requested via an API endpoint. The data were then cleaned in Pandas and upserted into a local Postgres database. SQL was used to create the relationships between the tables to form a star-based schema, and then run queries on the finished database.
 
 ## Installation instructions
 
